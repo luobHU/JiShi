@@ -748,4 +748,793 @@ function tickTimer() {
 }
 function onCountdownEnd() {
   const dur = timer.totalMs;
-  timer.running = false; timer
+  timer.running = false; timer.runStart = null; timer.elapsedBase = timer.totalMs;
+  saveTimer(); updateStartBtn(); tickTimer();
+  triggerAlarm();
+  openRecordModal(dur, resetTimer);
+}
+function handleFinish() {
+  const dur = elapsed();
+  if (dur < 1000) { toast('还没有开始计时哦～'); return; }
+  timer.running = false; timer.runStart = null;
+  saveTimer(); updateStartBtn(); tickTimer();
+  triggerAlarm();
+  openRecordModal(dur, resetTimer);
+}
+function setTimerMode(mode) {
+  timer.mode = mode; timer.running = false; timer.runStart = null; timer.elapsedBase = 0;
+  saveTimer(); updateStartBtn();
+  $('#segCountdown').classList.toggle('active', mode === 'countdown');
+  $('#segCountup').classList.toggle('active', mode === 'countup');
+  tickTimer();
+}
+function applyMinutes() {
+  const v = parseFloat($('#setMinutes').value);
+  if (!(v > 0)) { toast('请输入大于 0 的分钟数'); return; }
+  timer.totalMs = Math.round(v * 60000);
+  timer.running = false; timer.runStart = null; timer.elapsedBase = 0;
+  saveTimer(); updateStartBtn(); tickTimer();
+  toast('时长已设为 ' + fmtMS(timer.totalMs));
+}
+
+/* =====================================================================
+   5. 弹窗系统
+   ===================================================================== */
+let _modalCloseHandler = null;
+function openModal(html, onMount) {
+  const root = $('#modalRoot');
+  root.innerHTML = `<div class="modal-mask"><div class="modal-box">${html}</div></div>`;
+  root.classList.add('show');
+  const box = root.querySelector('.modal-box');
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    root.classList.remove('show');
+    root.innerHTML = '';
+    _modalCloseHandler = null;
+  };
+  _modalCloseHandler = close;
+  root.querySelector('.modal-mask').addEventListener('click', e => {
+    if (e.target.classList.contains('modal-mask')) close();
+  });
+  if (onMount) onMount(box, close);
+  return close;
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && _modalCloseHandler) _modalCloseHandler();
+});
+
+/* =====================================================================
+   6. 完成记录表
+   ===================================================================== */
+let records = store.get(K_REC, []);
+if (!Array.isArray(records)) records = [];
+records = records.filter(r => r && typeof r === 'object' && r.ts);
+function saveRecords() { store.set(K_REC, records); }
+
+function addRecord(name, durationMs, feedback) {
+  records.push({ id: uid(), name, durationMs, ts: Date.now(), feedback });
+  saveRecords(); renderRecords(); drawPie();
+}
+
+function openRecordModal(durationMs, onDone) {
+  const last = store.get(K_LASTPJ, '');
+  openModal(`
+    <h3>✨ 记录本次专注</h3>
+    <p class="muted">本次时长：<b>${fmtMS(durationMs)}</b></p>
+    <label class="field"><span>项目名称</span>
+      <input type="text" id="mPjName" value="${escAttr(last)}" placeholder="例如：行测资料分析">
+    </label>
+    <label class="field"><span>反馈</span></label>
+    <div class="radio-row" style="margin-top:-6px;">
+      <label class="radio-chip"><input type="radio" name="mFb" value="pos" checked>正向 楽</label>
+      <label class="radio-chip"><input type="radio" name="mFb" value="neg">负向 ▲</label>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="mSkip">跳过</button>
+      <button class="primary" id="mSave">保存记录</button>
+    </div>
+  `, (box, close) => {
+    const nameEl = box.querySelector('#mPjName');
+    setTimeout(() => nameEl.focus(), 80);
+    box.querySelector('#mSave').onclick = () => {
+      const name = nameEl.value.trim() || '未命名任务';
+      const fb = box.querySelector('input[name="mFb"]:checked').value;
+      store.set(K_LASTPJ, name);
+      addRecord(name, durationMs, fb);
+      close();
+      toast('已记录，继续加油 💪');
+      if (onDone) onDone();
+    };
+    box.querySelector('#mSkip').onclick = () => { close(); if (onDone) onDone(); };
+  });
+}
+
+function openEditRecordModal(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  openModal(`
+    <h3>✏️ 修改记录</h3>
+    <label class="field"><span>项目名称</span>
+      <input type="text" id="eName" value="${escAttr(r.name)}">
+    </label>
+    <label class="field"><span>时长（分钟）</span>
+      <input type="number" id="eMin" min="0.1" step="0.1" value="${(r.durationMs / 60000).toFixed(1)}">
+    </label>
+    <label class="field"><span>反馈</span></label>
+    <div class="radio-row" style="margin-top:-6px;">
+      <label class="radio-chip"><input type="radio" name="eFb" value="pos" ${r.feedback === 'pos' ? 'checked' : ''}>正向 楽</label>
+      <label class="radio-chip"><input type="radio" name="eFb" value="neg" ${r.feedback === 'neg' ? 'checked' : ''}>负向 ▲</label>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="eCancel">取消</button>
+      <button class="primary" id="eSave">保存</button>
+    </div>
+  `, (box, close) => {
+    box.querySelector('#eCancel').onclick = close;
+    box.querySelector('#eSave').onclick = () => {
+      const name = box.querySelector('#eName').value.trim();
+      const mins = parseFloat(box.querySelector('#eMin').value);
+      const fb = box.querySelector('input[name="eFb"]:checked').value;
+      if (!name) { toast('项目名称不能为空'); return; }
+      if (!(mins > 0)) { toast('时长需大于 0'); return; }
+      r.name = name;
+      r.durationMs = Math.round(mins * 60000);
+      r.feedback = fb;
+      saveRecords(); close();
+      renderRecords(); drawPie();
+      toast('已修改');
+    };
+  });
+}
+
+function renderWeekSelect() {
+  const sel = $('#weekSelect');
+  const prev = sel.value;
+  const set = new Set(records.map(r => getWeekKey(r.ts)));
+  set.add(getWeekKey(Date.now()));
+  const keys = Array.from(set).sort().reverse();
+  sel.innerHTML = keys.map(k => {
+    const start = new Date(k + 'T00:00:00');
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+    const isCur = k === getWeekKey(Date.now());
+    return `<option value="${k}">${k} ~ ${dateStr(end)}${isCur ? '（本周）' : ''}</option>`;
+  }).join('');
+  sel.value = keys.includes(prev) ? prev : keys[0];
+}
+
+function renderRecords() {
+  renderWeekSelect();
+  const wk = $('#weekSelect').value || getWeekKey(Date.now());
+  const list = records.filter(r => getWeekKey(r.ts) === wk).sort((a, b) => b.ts - a.ts);
+  const body = $('#recordBody');
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="5" class="empty">本周还没有记录，开始一次专注吧 🍅</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(r => `
+    <tr>
+      <td>${escHtml(r.name)}</td>
+      <td>${fmtMS(r.durationMs)}</td>
+      <td>${fmtDateTime(r.ts)}</td>
+      <td><span class="chip ${r.feedback === 'pos' ? 'pos' : 'neg'}">${r.feedback === 'pos' ? '正向 楽' : '负向 ▲'}</span></td>
+      <td class="op-cell">
+        <button class="ghost mini" data-act="edit-rec" data-id="${r.id}">修改</button>
+        <button class="ghost mini danger" data-act="del-rec" data-id="${r.id}">删除</button>
+      </td>
+    </tr>`).join('');
+}
+
+$('#recordBody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.act === 'edit-rec') openEditRecordModal(id);
+  if (btn.dataset.act === 'del-rec') {
+    const r = records.find(x => x.id === id);
+    if (!r) return;
+    if (!confirm(`确定删除「${r.name}」的这条记录吗？`)) return;
+    records = records.filter(x => x.id !== id);
+    saveRecords(); renderRecords(); drawPie();
+    toast('已删除');
+  }
+});
+
+function exportCSV() {
+  if (!records.length) { toast('还没有记录可以导出'); return; }
+  const rows = [['项目名称', '时长', '完成时间', '反馈']];
+  records.slice().sort((a, b) => a.ts - b.ts).forEach(r => {
+    rows.push([r.name, fmtMS(r.durationMs), fmtDateTime(r.ts), r.feedback === 'pos' ? '正向 楽' : '负向 ▲']);
+  });
+  const csv = rows.map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `完成记录_${dateStr(new Date())}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('CSV 已导出');
+}
+
+/* =====================================================================
+   7. 饼图（近 7 天，按项目名称）
+   ===================================================================== */
+const PALETTE = ['#4f8cff', '#ff8a5c', '#3ecf8e', '#f7c948', '#a97bff', '#f56aa8', '#33c6d9'];
+
+function getLast7DaysData() {
+  const now = Date.now(), from = now - 7 * 864e5;
+  const map = new Map();
+  records.forEach(r => {
+    if (r.ts < from || r.ts > now) return;
+    map.set(r.name, (map.get(r.name) || 0) + r.durationMs);
+  });
+  let arr = [...map.entries()].map(([name, ms]) => ({ name, ms })).sort((a, b) => b.ms - a.ms);
+  if (arr.length > 6) {
+    const otherMs = arr.slice(6).reduce((s, x) => s + x.ms, 0);
+    arr = arr.slice(0, 6).concat([{ name: '其他', ms: otherMs }]);
+  }
+  return arr;
+}
+
+function drawPie() {
+  const cv = $('#pieChart');
+  if (!cv) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = 260, H = 260;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const legend = $('#pieLegend');
+  const data = getLast7DaysData();
+  const total = data.reduce((s, d) => s + d.ms, 0);
+
+  if (!data.length || total <= 0) {
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, 105, 0, Math.PI * 2);
+    ctx.lineWidth = 30;
+    ctx.strokeStyle = 'rgba(140,160,190,.22)';
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(140,160,190,.9)';
+    ctx.font = '600 13px -apple-system, "PingFang SC", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('近 7 天暂无记录', W/2, H/2);
+    legend.innerHTML = '<div class="empty">开始一次专注，这里就会长出你的饼图啦 🍅</div>';
+    return;
+  }
+
+  const cx = W/2, cy = H/2, rOut = 108, rIn = 66;
+  if (data.length === 1) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOut, 0, Math.PI * 2);
+    ctx.moveTo(cx + rIn, cy);
+    ctx.arc(cx, cy, rIn, 0, Math.PI * 2);
+    ctx.fillStyle = PALETTE[0];
+    ctx.fill('evenodd');
+  } else {
+    let a0 = -Math.PI / 2;
+    data.forEach((d, i) => {
+      const a1 = a0 + (d.ms / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rOut, a0, a1);
+      ctx.arc(cx, cy, rIn, a1, a0, true);
+      ctx.closePath();
+      ctx.fillStyle = PALETTE[i % PALETTE.length];
+      ctx.fill();
+      a0 = a1;
+    });
+  }
+
+  ctx.fillStyle = 'rgba(120,140,170,.95)';
+  ctx.font = '700 12px -apple-system, "PingFang SC", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('近 7 天', cx, cy - 13);
+  ctx.fillStyle = '#3b6ea8';
+  ctx.font = '800 17px -apple-system, "PingFang SC", sans-serif';
+  ctx.fillText(fmtMS(total), cx, cy + 11);
+
+  legend.innerHTML = data.map((d, i) => {
+    const pct = (d.ms / total * 100).toFixed(1);
+    return `<div class="legend-item">
+      <span class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
+      <span class="legend-name" title="${escAttr(d.name)}">${escHtml(d.name)}</span>
+      <span class="legend-val">${pct}% · ${fmtMS(d.ms)}</span>
+    </div>`;
+  }).join('');
+}
+
+/* =====================================================================
+   8. 正确率
+   ===================================================================== */
+let accRecords = store.get(K_ACC, []);
+if (!Array.isArray(accRecords)) accRecords = [];
+accRecords = accRecords.filter(r => r && typeof r === 'object' && r.paper != null);
+const selectedAccKeys = new Set();
+
+function accKey(paper, type) { return paper + '||' + type; }
+function parseKey(k) {
+  const i = k.indexOf('||');
+  return i < 0 ? [k, ''] : [k.slice(0, i), k.slice(i + 2)];
+}
+
+function getAccGroups() {
+  const map = new Map();
+  accRecords.forEach(r => {
+    const key = accKey(r.paper, r.type);
+    if (!map.has(key)) map.set(key, { paper: r.paper, type: r.type, count: 0, sumTotal: 0, sumWrong: 0 });
+    const g = map.get(key);
+    g.count++; g.sumTotal += Number(r.total) || 0; g.sumWrong += Number(r.wrong) || 0;
+  });
+  return [...map.values()].map(g => ({
+    ...g, key: accKey(g.paper, g.type),
+    rate: g.sumTotal ? (g.sumTotal - g.sumWrong) / g.sumTotal : 0
+  })).sort((a, b) => a.paper.localeCompare(b.paper, 'zh') || a.type.localeCompare(b.type, 'zh'));
+}
+
+function refreshPaperList() {
+  const list = $('#paperList');
+  if (!list) return;
+  const papers = [...new Set(accRecords.map(r => r.paper))].sort();
+  list.innerHTML = papers.map(p => `<option value="${escAttr(p)}">`).join('');
+}
+
+function renderAccTable() {
+  refreshPaperList();
+  const groups = getAccGroups();
+  const body = $('#accBody');
+  if (!groups.length) {
+    body.innerHTML = `<tr><td colspan="8" class="empty">还没有记录，做完一套题就来生成正确率吧 📊</td></tr>`;
+    selectedAccKeys.clear();
+    return;
+  }
+  const validKeys = new Set(groups.map(g => g.key));
+  [...selectedAccKeys].forEach(k => { if (!validKeys.has(k)) selectedAccKeys.delete(k); });
+
+  body.innerHTML = groups.map(g => {
+    const enc = escAttr(encodeURIComponent(g.key));
+    return `<tr>
+      <td><input type="checkbox" data-key="${enc}" ${selectedAccKeys.has(g.key) ? 'checked' : ''}></td>
+      <td>${escHtml(g.paper)}</td>
+      <td>${escHtml(g.type)}</td>
+      <td>${g.count}</td>
+      <td>${g.sumTotal}</td>
+      <td>${g.sumWrong}</td>
+      <td class="${rateClass(g.rate)}">${(g.rate * 100).toFixed(1)}%</td>
+      <td class="op-cell">
+        <button class="ghost mini" data-act="edit-acc" data-key="${enc}">编辑</button>
+        <button class="ghost mini danger" data-act="del-acc" data-key="${enc}">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+$('#accBody').addEventListener('change', e => {
+  const cb = e.target.closest('input[type=checkbox]');
+  if (!cb) return;
+  const key = decodeURIComponent(cb.dataset.key);
+  if (cb.checked) selectedAccKeys.add(key); else selectedAccKeys.delete(key);
+});
+
+$('#accBody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const key = decodeURIComponent(btn.dataset.key);
+  const [paper, type] = parseKey(key);
+
+  if (btn.dataset.act === 'edit-acc') {
+    openModal(`
+      <h3>✏️ 修改分组名称</h3>
+      <p class="muted">将同步修改该分组下的所有记录。</p>
+      <label class="field"><span>试卷名称</span>
+        <input type="text" id="ePaper" value="${escAttr(paper)}"></label>
+      <label class="field"><span>题目类型</span>
+        <input type="text" id="eType" value="${escAttr(type)}" list="typeList"></label>
+      <div class="modal-actions">
+        <button class="ghost" id="eCancel">取消</button>
+        <button class="primary" id="eSave">保存</button>
+      </div>
+    `, (box, close) => {
+      box.querySelector('#eCancel').onclick = close;
+      box.querySelector('#eSave').onclick = () => {
+        const np = box.querySelector('#ePaper').value.trim();
+        const nt = box.querySelector('#eType').value.trim();
+        if (!np || !nt) { toast('试卷名称和题目类型不能为空'); return; }
+        accRecords.forEach(r => {
+          if (accKey(r.paper, r.type) === key) { r.paper = np; r.type = nt; }
+        });
+        store.set(K_ACC, accRecords);
+        selectedAccKeys.delete(key);
+        close(); renderAccTable();
+        toast('已修改');
+      };
+    });
+  }
+
+  if (btn.dataset.act === 'del-acc') {
+    const n = accRecords.filter(r => accKey(r.paper, r.type) === key).length;
+    if (!confirm(`确定删除「${paper} · ${type}」下的 ${n} 条记录吗？`)) return;
+    accRecords = accRecords.filter(r => accKey(r.paper, r.type) !== key);
+    store.set(K_ACC, accRecords);
+    selectedAccKeys.delete(key);
+    renderAccTable();
+    $('#analysisBox').innerHTML = '';
+    toast('已删除');
+  }
+});
+
+function updateAccLive() {
+  const total = parseInt($('#accTotal').value, 10);
+  const wrong = parseInt($('#accWrong').value, 10);
+  const el = $('#accLive');
+  if (!(total > 0) || isNaN(wrong) || wrong < 0 || wrong > total) {
+    el.textContent = '--';
+    el.className = 'acc-live';
+    return;
+  }
+  const rate = (total - wrong) / total;
+  el.textContent = (rate * 100).toFixed(1) + '%';
+  el.className = 'acc-live ' + rateClass(rate);
+}
+$('#accTotal').addEventListener('input', updateAccLive);
+$('#accWrong').addEventListener('input', updateAccLive);
+
+function saveAccRecord(paper, type, total, wrong) {
+  accRecords.push({ id: uid(), paper, type, total, wrong, ts: Date.now() });
+  store.set(K_ACC, accRecords);
+  renderAccTable();
+  toast('已生成正确率并汇总 📈');
+  $('#accWrong').value = '';
+  updateAccLive();
+}
+
+function shakeEl(el) {
+  if (!el) return;
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+}
+
+function genAcc() {
+  const total = parseInt($('#accTotal').value, 10);
+  const wrong = parseInt($('#accWrong').value, 10);
+  if (!(total > 0)) { shakeEl($('#accTotal')); toast('请填写总题目数'); return; }
+  if (isNaN(wrong) || wrong < 0 || wrong > total) { shakeEl($('#accWrong')); toast('错误个数需在 0 到总题数之间'); return; }
+
+  const paper = $('#accPaper').value.trim();
+  const type = $('#accType').value.trim();
+
+  if (paper && type) { saveAccRecord(paper, type, total, wrong); return; }
+
+  openModal(`
+    <h3>📄 补充试卷信息</h3>
+    <p class="muted">本次正确率：<b class="${rateClass((total - wrong) / total)}">${((total - wrong) / total * 100).toFixed(1)}%</b></p>
+    <label class="field"><span>试卷名称</span>
+      <input type="text" id="qPaper" list="paperList" value="${escAttr(paper)}" placeholder="例如：2024 国考行测">
+    </label>
+    <label class="field"><span>题目类型</span>
+      <input type="text" id="qType" list="typeList" value="${escAttr(type)}" placeholder="例如：资料分析">
+    </label>
+    <div class="modal-actions">
+      <button class="ghost" id="qCancel">取消</button>
+      <button class="primary" id="qSave">保存记录</button>
+    </div>
+  `, (box, close) => {
+    box.querySelector('#qCancel').onclick = close;
+    box.querySelector('#qSave').onclick = () => {
+      const p = box.querySelector('#qPaper').value.trim();
+      const t = box.querySelector('#qType').value.trim();
+      if (!p || !t) { toast('请填写试卷名称和题目类型'); return; }
+      $('#accPaper').value = p;
+      $('#accType').value = t;
+      close();
+      saveAccRecord(p, t, total, wrong);
+    };
+  });
+}
+
+/* ---- 分析 ---- */
+const CHEERS = [
+  '你已经比昨天的自己更棒啦，继续保持这份节奏 🌟',
+  '薄弱模块只是还没被点亮的地图，多刷几套就熟啦 🗺️',
+  '每一次复盘，都是在给未来的自己攒运气 🍀',
+  '别着急，稳稳地走，你正在进步的路上 🐢💨',
+  '小步快跑，积累起来就是大大的跨越 ✨',
+  '错题是宝藏，挖得越多，分数越亮 💎',
+  '今天多练一道，考场上就多一分从容 🌈'
+];
+
+function analyzeSelected() {
+  if (!selectedAccKeys.size) { toast('请先勾选要分析的试卷 / 题型'); return; }
+  const recs = accRecords.filter(r => selectedAccKeys.has(accKey(r.paper, r.type)));
+  if (!recs.length) { toast('选中的分组没有记录'); return; }
+
+  const sumT = recs.reduce((s, r) => s + (Number(r.total) || 0), 0);
+  const sumW = recs.reduce((s, r) => s + (Number(r.wrong) || 0), 0);
+  const overall = sumT ? (sumT - sumW) / sumT : 0;
+
+  const byType = new Map();
+  recs.forEach(r => {
+    if (!byType.has(r.type)) byType.set(r.type, { type: r.type, total: 0, wrong: 0, items: [] });
+    const g = byType.get(r.type);
+    g.total += Number(r.total) || 0;
+    g.wrong += Number(r.wrong) || 0;
+    g.items.push(r);
+  });
+  const typeArr = [...byType.values()].map(g => ({
+    ...g, rate: g.total ? (g.total - g.wrong) / g.total : 0
+  })).sort((a, b) => a.rate - b.rate);
+
+  const papers = [...new Set(recs.map(r => r.paper))];
+
+  let html = `<h4>🔍 数据分析</h4>`;
+  html += `<div>分析范围：<b>${papers.length}</b> 套试卷 · <b>${typeArr.length}</b> 个题型 · <b>${recs.length}</b> 条记录。</div>`;
+  html += `<div>累计 <b>${sumT}</b> 题，错 <b>${sumW}</b> 题，综合正确率 <b class="${rateClass(overall)}">${(overall * 100).toFixed(1)}%</b>。</div>`;
+
+  if (typeArr.length > 1) {
+    const weak = typeArr[0], strong = typeArr[typeArr.length - 1];
+    html += `<div>📌 最需要加强的是 <span class="tag">${escHtml(weak.type)}</span>（正确率 ${(weak.rate * 100).toFixed(1)}%），建议接下来重点安排几套专项练习。</div>`;
+    html += `<div>🏅 表现最稳的是 <span class="tag">${escHtml(strong.type)}</span>（正确率 ${(strong.rate * 100).toFixed(1)}%），保持手感就好。</div>`;
+  } else if (typeArr.length === 1) {
+    html += `<div>📌 当前只涉及 <span class="tag">${escHtml(typeArr[0].type)}</span>，正确率 ${(typeArr[0].rate * 100).toFixed(1)}%，可以再补充其他题型一起对比。</div>`;
+  }
+
+  const trends = [];
+  typeArr.forEach(g => {
+    if (g.items.length < 2) return;
+    const sorted = g.items.slice().sort((a, b) => a.ts - b.ts);
+    const half = Math.floor(sorted.length / 2);
+    const rateOf = arr => {
+      const t = arr.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      const w = arr.reduce((s, r) => s + (Number(r.wrong) || 0), 0);
+      return t ? (t - w) / t : 0;
+    };
+    const r1 = rateOf(sorted.slice(0, half));
+    const r2 = rateOf(sorted.slice(half));
+    trends.push({ type: g.type, d: r2 - r1, r1, r2 });
+  });
+  trends.sort((a, b) => b.d - a.d);
+
+  if (trends.length) {
+    html += `<div style="margin-top:8px;">📈 题型趋势：</div>`;
+    trends.forEach(t => {
+      const p1 = (t.r1 * 100).toFixed(1), p2 = (t.r2 * 100).toFixed(1);
+      if (t.d > 0.03) {
+        html += `<div>　<span class="tag">${escHtml(t.type)}</span> ${p1}% → ${p2}% <span class="arrow-up">▲ 进步中</span>，继续冲！</div>`;
+      } else if (t.d < -0.03) {
+        html += `<div>　<span class="tag">${escHtml(t.type)}</span> ${p1}% → ${p2}% <span class="arrow-down">▼ 略有回落</span>，仍需努力，回头看看错题吧。</div>`;
+      } else {
+        html += `<div>　<span class="tag">${escHtml(t.type)}</span> ${p1}% → ${p2}% 基本持平，稳扎稳打。</div>`;
+      }
+    });
+  }
+
+  html += `<div class="cheer">${CHEERS[Math.floor(Math.random() * CHEERS.length)]}</div>`;
+  $('#analysisBox').innerHTML = `<div class="analysis-box">${html}</div>`;
+  $('#analysisBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* =====================================================================
+   9. 便利贴
+   ===================================================================== */
+let stickies = store.get(K_STICKY, []);
+if (!Array.isArray(stickies)) stickies = [];
+function saveStickies() { store.set(K_STICKY, stickies); }
+
+function renderStickies() {
+  const list = $('#stickyList');
+  if (!stickies.length) {
+    list.innerHTML = '<div class="empty">还没有便签～ 写点什么吧 📌</div>';
+    return;
+  }
+  list.innerHTML = stickies.slice().sort((a, b) => b.ts - a.ts).map(s => `
+    <div class="sticky-item" data-id="${s.id}">
+      <div class="sticky-text">${escHtml(s.text)}</div>
+      <div class="sticky-meta">${fmtDateTime(s.ts)}</div>
+      <div class="sticky-ops">
+        <button class="ghost mini" data-act="edit-sticky">编辑</button>
+        <button class="ghost mini danger" data-act="del-sticky">删除</button>
+      </div>
+    </div>`).join('');
+}
+
+$('#stickyList').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const item = btn.closest('.sticky-item');
+  if (!item) return;
+  const id = item.dataset.id;
+  const s = stickies.find(x => x.id === id);
+  if (!s) return;
+
+  if (btn.dataset.act === 'del-sticky') {
+    if (!confirm('确定删除这条便签吗？')) return;
+    stickies = stickies.filter(x => x.id !== id);
+    saveStickies(); renderStickies();
+    toast('便签已删除');
+  }
+
+  if (btn.dataset.act === 'edit-sticky') {
+    item.innerHTML = `
+      <textarea class="sticky-edit">${escHtml(s.text)}</textarea>
+      <div class="sticky-ops">
+        <button class="primary mini" data-act="save-sticky">保存</button>
+        <button class="ghost mini" data-act="cancel-sticky">取消</button>
+      </div>`;
+    const ta = item.querySelector('textarea');
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 50);
+  }
+
+  if (btn.dataset.act === 'save-sticky') {
+    const ta = item.querySelector('textarea');
+    const text = ta.value.trim();
+    if (!text) { toast('内容不能为空'); return; }
+    s.text = text;
+    s.ts = Date.now();
+    saveStickies(); renderStickies();
+    toast('便签已更新');
+  }
+
+  if (btn.dataset.act === 'cancel-sticky') {
+    renderStickies();
+  }
+});
+
+function addSticky() {
+  const ta = $('#stickyInput');
+  const text = ta.value.trim();
+  if (!text) { toast('写点内容再添加吧～'); return; }
+  stickies.push({ id: uid(), text, ts: Date.now() });
+  saveStickies();
+  ta.value = '';
+  renderStickies();
+  toast('便签已添加 📌');
+}
+
+/* =====================================================================
+   10. 主题 / 模式切换
+   ===================================================================== */
+function applyTheme(dark) {
+  document.body.classList.toggle('dark', dark);
+  $('#themeIcon').textContent = dark ? '☀️' : '🌙';
+  store.set(K_THEME, dark);
+}
+
+function switchMode(mode) {
+  if (!['time', 'pomo', 'acc'].includes(mode)) mode = 'time';
+  document.body.dataset.mode = mode;
+  $$('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + mode));
+  store.set(K_MODE, mode);
+  /* 切换模式时计时器不中断，tickTimer 由全局 interval 持续刷新 */
+  if (mode === 'pomo') {
+    tickTimer();
+    renderRecords();
+    drawPie();
+  }
+  if (mode === 'acc') {
+    renderAccTable();
+  }
+}
+
+/* =====================================================================
+   11. 事件绑定 & 初始化
+   ===================================================================== */
+function bindEvents() {
+  /* 模式切换 */
+  $$('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+
+  /* 主题 */
+  $('#btnTheme').addEventListener('click', () => {
+    applyTheme(!document.body.classList.contains('dark'));
+  });
+
+  /* 便利贴抽屉 */
+  $('#btnSticky').addEventListener('click', () => {
+    $('#drawer').classList.add('open');
+    renderStickies();
+  });
+  $('#btnCloseDrawer').addEventListener('click', () => {
+    $('#drawer').classList.remove('open');
+  });
+  $('#btnAddSticky').addEventListener('click', addSticky);
+  $('#stickyInput').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addSticky(); }
+  });
+
+  /* 番茄钟按钮 */
+  $('#segCountdown').addEventListener('click', () => setTimerMode('countdown'));
+  $('#segCountup').addEventListener('click', () => setTimerMode('countup'));
+  $('#btnStartPause').addEventListener('click', toggleTimer);
+  $('#btnReset').addEventListener('click', resetTimer);
+  $('#btnFinish').addEventListener('click', handleFinish);
+  $('#btnApplySet').addEventListener('click', applyMinutes);
+  $('#setMinutes').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyMinutes(); }
+  });
+
+  /* 周选择 & 导出 */
+  $('#weekSelect').addEventListener('change', renderRecords);
+  $('#btnExportCSV').addEventListener('click', exportCSV);
+
+  /* 正确率 */
+  $('#btnGenAcc').addEventListener('click', genAcc);
+  $('#btnAnalyze').addEventListener('click', analyzeSelected);
+  $('#btnCheckAll').addEventListener('click', () => {
+    const groups = getAccGroups();
+    if (!groups.length) { toast('还没有可分析的分组'); return; }
+    const allSelected = groups.every(g => selectedAccKeys.has(g.key));
+    selectedAccKeys.clear();
+    if (!allSelected) groups.forEach(g => selectedAccKeys.add(g.key));
+    renderAccTable();
+  });
+
+  /* 空格键：开始 / 暂停（仅番茄钟模式，且不在输入框中） */
+  document.addEventListener('keydown', e => {
+    if (e.code !== 'Space') return;
+    if (document.body.dataset.mode !== 'pomo') return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
+    if (e.target.isContentEditable) return;
+    if ($('#modalRoot').classList.contains('show')) return;
+    e.preventDefault();
+    toggleTimer();
+  });
+
+  /* 窗口重新可见时立即刷新（休眠唤醒后） */
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      tickClock();
+      tickTimer();
+      if (document.body.dataset.mode === 'pomo') drawPie();
+    }
+  });
+  window.addEventListener('focus', () => { tickClock(); tickTimer(); });
+}
+
+function init() {
+  /* 主题 */
+  applyTheme(store.get(K_THEME, false));
+
+  /* 计时器状态 */
+  loadTimer();
+  updateStartBtn();
+  tickTimer();
+
+  /* 同步设置框显示 */
+  const mins = Math.round(timer.totalMs / 60000);
+  const setEl = $('#setMinutes');
+  if (setEl) setEl.value = mins > 0 ? mins : 25;
+
+  /* 秒表模式按钮态 */
+  $('#segCountdown').classList.toggle('active', timer.mode === 'countdown');
+  $('#segCountup').classList.toggle('active', timer.mode === 'countup');
+
+  /* 时间模式立即刷新 */
+  tickClock();
+
+  /* 记录 / 饼图 / 正确率 / 便利贴 */
+  renderRecords();
+  drawPie();
+  renderAccTable();
+  renderStickies();
+
+  /* 模式恢复 */
+  switchMode(store.get(K_MODE, 'time'));
+
+  /* 事件绑定 */
+  bindEvents();
+
+  /* 全局定时刷新 */
+  setInterval(tickClock, 1000);
+  setInterval(tickTimer, 100);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
