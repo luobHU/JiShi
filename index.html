@@ -633,7 +633,7 @@ function tickClock() {
 function toggleFlipClock() {
   const overlay = $('#flipClockOverlay');
   if (overlay.classList.contains('active')) { overlay.classList.remove('active'); document.body.style.overflow = ''; if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }
-  else { overlay.classList.add('active'); document.body.style.overflow
+  else { overlay.classList.add('active'); document.body.style.overflow = 'hidden'; $('#flipH').innerHTML = ''; tickClock(); const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
 }
 
 /* =====================================================================
