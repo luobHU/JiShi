@@ -121,6 +121,8 @@ main{position:relative;z-index:10;padding:92px 18px 70px;max-width:1180px;margin
   min-height:calc(100vh - 170px);
   min-height:calc(100dvh - 170px);
 }
+.clock-tools { display: flex; gap: 10px; margin-bottom: 20px; }
+
 #bigClock{
   display:flex;align-items:baseline;justify-content:center;
   font-size:clamp(58px,14vw,180px);
@@ -367,6 +369,45 @@ body.dark .sticky-item{
   60%{transform:translateX(-5px);}80%{transform:translateX(5px);}
 }
 
+/* ============ 翻页时钟 ============ */
+#flipClockOverlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: #000; color: #fff;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+#flipClockOverlay.active { display: flex; }
+.flip-wrap { display: flex; gap: 10px; align-items: center; transform: scale(1.2); margin-top: -40px; }
+.flip-group { display: flex; gap: 6px; }
+.flip-card {
+  position: relative; width: 90px; height: 130px;
+  background: #1a1a1a; border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(255,255,255,0.05), inset 0 0 0 1px rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 100px; font-weight: bold; color: #fff;
+  perspective: 400px;
+}
+.flip-card::after {
+  content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px;
+  background: #000; z-index: 2;
+}
+.flip-colon { font-size: 80px; font-weight: bold; color: #fff; margin: 0 5px; opacity: 0.8; }
+.flip-anim { animation: flipDown 0.6s ease-in; }
+@keyframes flipDown {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); background: #333; }
+  100% { transform: rotateX(0deg); }
+}
+#flipDate {
+  margin-top: 40px; font-size: 20px; color: #888; font-weight: 500; letter-spacing: 2px;
+}
+#flipCloseBtn {
+  position: absolute; bottom: 40px; background: rgba(255,255,255,0.1);
+  color: #fff; border: 1px solid rgba(255,255,255,0.2);
+  padding: 10px 30px; border-radius: 30px; font-size: 16px; cursor: pointer;
+}
+
 /* ============ 平板 / 手机适配 ============ */
 @media (pointer:coarse){
   .only-desktop{display:none;}
@@ -388,6 +429,9 @@ body.dark .sticky-item{
   .ctrl-row .primary,.ctrl-row .ghost{flex:1 1 40%;}
   #pieChart{width:220px;height:220px;}
   .modal-box{padding:20px;}
+  .flip-wrap { transform: scale(0.8); }
+  .flip-card { width: 70px; height: 100px; font-size: 70px; }
+  .flip-colon { font-size: 60px; }
 }
 @media (min-width:900px) and (orientation:landscape){
   main{padding-top:100px;}
@@ -406,6 +450,7 @@ body.dark .sticky-item{
     <button data-mode="acc">📊 正确率</button>
   </nav>
   <div class="top-right">
+    <button class="icon-btn" id="btnFullscreen"><span>⛶</span><span class="lbl">全屏</span></button>
     <button class="icon-btn" id="btnSticky"><span>📝</span><span class="lbl">便利贴</span></button>
     <button class="icon-btn" id="btnTheme"><span id="themeIcon">🌙</span><span class="lbl">夜间</span></button>
   </div>
@@ -414,6 +459,9 @@ body.dark .sticky-item{
 <main>
   <!-- ===== 时间模式 ===== -->
   <section id="view-time" class="view active">
+    <div class="clock-tools">
+      <button id="btnFlipMode" class="ghost">🕒 切换翻页时钟</button>
+    </div>
     <div id="bigClock">
       <span id="clockHM">00:00</span><span id="clockS">00</span>
     </div>
@@ -548,6 +596,19 @@ body.dark .sticky-item{
   </div>
 </aside>
 
+<!-- 翻页时钟全屏层 -->
+<div id="flipClockOverlay">
+  <div class="flip-wrap">
+    <div class="flip-group" id="flipH"></div>
+    <div class="flip-colon">:</div>
+    <div class="flip-group" id="flipM"></div>
+    <div class="flip-colon">:</div>
+    <div class="flip-group" id="flipS"></div>
+  </div>
+  <div id="flipDate">2026年11月18日 星期三</div>
+  <button id="flipCloseBtn">退出全屏时钟</button>
+</div>
+
 <div id="modalRoot"></div>
 
 <script>
@@ -605,7 +666,7 @@ function rateClass(r) {
 }
 
 /* =====================================================================
-   1. 背景漂浮图（Fixed + Keyframes + JS 随机）
+   1. 背景漂浮图
    ===================================================================== */
 (function initBackground() {
   const layer = $('#bgLayer');
@@ -678,19 +739,85 @@ function triggerAlarm() {
 }
 
 /* =====================================================================
-   3. 时间模式（北京时间）
+   3. 时间模式 & 翻页时钟
    ===================================================================== */
 const WEEK_CN = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+let lastFlipValues = { h1: -1, h2: -1, m1: -1, m2: -1, s1: -1, s2: -1 };
+
+function createFlipCard(val) {
+  return `<div class="flip-card"><span class="num">${val}</span></div>`;
+}
+
 function tickClock() {
   const now = new Date();
-  $('#clockHM').textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-  $('#clockS').textContent  = pad2(now.getSeconds());
-  $('#bigDate').textContent =
-    `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日　${WEEK_CN[now.getDay()]}`;
+  const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  
+  // 更新普通时钟
+  $('#clockHM').textContent = `${pad2(h)}:${pad2(m)}`;
+  $('#clockS').textContent  = pad2(s);
+  $('#bigDate').textContent = `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日　${WEEK_CN[now.getDay()]}`;
+
+  // 更新翻页时钟
+  if ($('#flipClockOverlay').classList.contains('active')) {
+    const timeStr = pad2(h) + pad2(m) + pad2(s);
+    const ids = ['h1','h2','m1','m2','s1','s2'];
+    const containers = [ $('#flipH'), $('#flipH'), $('#flipM'), $('#flipM'), $('#flipS'), $('#flipS') ];
+    const groups = { h: $('#flipH'), m: $('#flipM'), s: $('#flipS') };
+    
+    // 初始化 DOM（只在第一次创建）
+    if (groups.h.innerHTML === '') {
+      groups.h.innerHTML = createFlipCard(pad2(h)[0]) + createFlipCard(pad2(h)[1]);
+      groups.m.innerHTML = createFlipCard(pad2(m)[0]) + createFlipCard(pad2(m)[1]);
+      groups.s.innerHTML = createFlipCard(pad2(s)[0]) + createFlipCard(pad2(s)[1]);
+      lastFlipValues = { h1: pad2(h)[0], h2: pad2(h)[1], m1: pad2(m)[0], m2: pad2(m)[1], s1: pad2(s)[0], s2: pad2(s)[1] };
+    } else {
+      // 更新并触发动画
+      const updateCard = (group, index, newVal, oldValKey) => {
+        if (lastFlipValues[oldValKey] !== newVal) {
+          const card = group.children[index];
+          const numSpan = card.querySelector('.num');
+          numSpan.textContent = newVal;
+          card.classList.remove('flip-anim');
+          void card.offsetWidth; // reflow
+          card.classList.add('flip-anim');
+          lastFlipValues[oldValKey] = newVal;
+        }
+      };
+      updateCard(groups.h, 0, pad2(h)[0], 'h1');
+      updateCard(groups.h, 1, pad2(h)[1], 'h2');
+      updateCard(groups.m, 0, pad2(m)[0], 'm1');
+      updateCard(groups.m, 1, pad2(m)[1], 'm2');
+      updateCard(groups.s, 0, pad2(s)[0], 's1');
+      updateCard(groups.s, 1, pad2(s)[1], 's2');
+    }
+    $('#flipDate').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${WEEK_CN[now.getDay()]}`;
+  }
+}
+
+function toggleFlipClock() {
+  const overlay = $('#flipClockOverlay');
+  if (overlay.classList.contains('active')) {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+    // 尝试退出全屏
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(()=>{});
+    }
+  } else {
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    $('#flipH').innerHTML = ''; // 强制重新绘制
+    tickClock();
+    // 尝试进入全屏
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(()=>{});
+    }
+  }
 }
 
 /* =====================================================================
-   4. 番茄钟计时核心（Date.now 真实时间差）
+   4. 番茄钟计时核心
    ===================================================================== */
 const timer = { mode: 'countdown', totalMs: 25 * 60 * 1000, elapsedBase: 0, runStart: null, running: false };
 
@@ -725,7 +852,7 @@ function toggleTimer() {
   } else {
     if (timer.mode === 'countdown' && timer.elapsedBase >= timer.totalMs) timer.elapsedBase = 0;
     timer.running = true;
-    timer.runStart = Date.now();     /* ★ 真实系统时间，休眠唤醒也不漏算 */
+    timer.runStart = Date.now();
   }
   saveTimer(); updateStartBtn(); tickTimer();
 }
@@ -959,7 +1086,7 @@ function exportCSV() {
 }
 
 /* =====================================================================
-   7. 饼图（近 7 天，按项目名称）
+   7. 饼图
    ===================================================================== */
 const PALETTE = ['#4f8cff', '#ff8a5c', '#3ecf8e', '#f7c948', '#a97bff', '#f56aa8', '#33c6d9'];
 
@@ -1127,7 +1254,7 @@ $('#accBody').addEventListener('click', e => {
   if (btn.dataset.act === 'edit-acc') {
     openModal(`
       <h3>✏️ 修改分组名称</h3>
-      <p class="muted">将同步修改该分组下的所有记录。</p>
+      <p class="muted">将同步修改该分组下的所有记录
       <label class="field"><span>试卷名称</span>
         <input type="text" id="ePaper" value="${escAttr(paper)}"></label>
       <label class="field"><span>题目类型</span>
@@ -1394,7 +1521,7 @@ function addSticky() {
 }
 
 /* =====================================================================
-   10. 主题 / 模式切换
+   10. 主题 / 模式切换 / 全屏
    ===================================================================== */
 function applyTheme(dark) {
   document.body.classList.toggle('dark', dark);
@@ -1408,7 +1535,7 @@ function switchMode(mode) {
   $$('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + mode));
   store.set(K_MODE, mode);
-  /* 切换模式时计时器不中断，tickTimer 由全局 interval 持续刷新 */
+  
   if (mode === 'pomo') {
     tickTimer();
     renderRecords();
@@ -1419,21 +1546,38 @@ function switchMode(mode) {
   }
 }
 
+function toggleFullscreen() {
+  const doc = window.document;
+  const el = doc.documentElement;
+  if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
+    if (el.requestFullscreen) { el.requestFullscreen().catch(()=>{}); }
+    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+    else if (el.mozRequestFullScreen) { el.mozRequestFullScreen(); }
+    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+  } else {
+    if (doc.exitFullscreen) { doc.exitFullscreen().catch(()=>{}); }
+    else if (doc.webkitExitFullscreen) { doc.webkitExitFullscreen(); }
+    else if (doc.mozCancelFullScreen) { doc.mozCancelFullScreen(); }
+    else if (doc.msExitFullscreen) { doc.msExitFullscreen(); }
+  }
+}
+
 /* =====================================================================
    11. 事件绑定 & 初始化
    ===================================================================== */
 function bindEvents() {
-  /* 模式切换 */
   $$('.tabs button').forEach(btn => {
     btn.addEventListener('click', () => switchMode(btn.dataset.mode));
   });
 
-  /* 主题 */
   $('#btnTheme').addEventListener('click', () => {
     applyTheme(!document.body.classList.contains('dark'));
   });
+  
+  $('#btnFullscreen').addEventListener('click', toggleFullscreen);
+  $('#btnFlipMode').addEventListener('click', toggleFlipClock);
+  $('#flipCloseBtn').addEventListener('click', toggleFlipClock);
 
-  /* 便利贴抽屉 */
   $('#btnSticky').addEventListener('click', () => {
     $('#drawer').classList.add('open');
     renderStickies();
@@ -1446,7 +1590,6 @@ function bindEvents() {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addSticky(); }
   });
 
-  /* 番茄钟按钮 */
   $('#segCountdown').addEventListener('click', () => setTimerMode('countdown'));
   $('#segCountup').addEventListener('click', () => setTimerMode('countup'));
   $('#btnStartPause').addEventListener('click', toggleTimer);
@@ -1457,11 +1600,9 @@ function bindEvents() {
     if (e.key === 'Enter') { e.preventDefault(); applyMinutes(); }
   });
 
-  /* 周选择 & 导出 */
   $('#weekSelect').addEventListener('change', renderRecords);
   $('#btnExportCSV').addEventListener('click', exportCSV);
 
-  /* 正确率 */
   $('#btnGenAcc').addEventListener('click', genAcc);
   $('#btnAnalyze').addEventListener('click', analyzeSelected);
   $('#btnCheckAll').addEventListener('click', () => {
@@ -1473,7 +1614,6 @@ function bindEvents() {
     renderAccTable();
   });
 
-  /* 空格键：开始 / 暂停（仅番茄钟模式，且不在输入框中） */
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space') return;
     if (document.body.dataset.mode !== 'pomo') return;
@@ -1485,7 +1625,6 @@ function bindEvents() {
     toggleTimer();
   });
 
-  /* 窗口重新可见时立即刷新（休眠唤醒后） */
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
       tickClock();
@@ -1497,39 +1636,27 @@ function bindEvents() {
 }
 
 function init() {
-  /* 主题 */
   applyTheme(store.get(K_THEME, false));
-
-  /* 计时器状态 */
   loadTimer();
   updateStartBtn();
   tickTimer();
 
-  /* 同步设置框显示 */
   const mins = Math.round(timer.totalMs / 60000);
   const setEl = $('#setMinutes');
   if (setEl) setEl.value = mins > 0 ? mins : 25;
 
-  /* 秒表模式按钮态 */
   $('#segCountdown').classList.toggle('active', timer.mode === 'countdown');
   $('#segCountup').classList.toggle('active', timer.mode === 'countup');
 
-  /* 时间模式立即刷新 */
   tickClock();
-
-  /* 记录 / 饼图 / 正确率 / 便利贴 */
   renderRecords();
   drawPie();
   renderAccTable();
   renderStickies();
 
-  /* 模式恢复 */
   switchMode(store.get(K_MODE, 'time'));
-
-  /* 事件绑定 */
   bindEvents();
 
-  /* 全局定时刷新 */
   setInterval(tickClock, 1000);
   setInterval(tickTimer, 100);
 }
