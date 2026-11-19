@@ -139,6 +139,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .legend-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--text);}
 .legend-val{color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap;}
 
+/* ============ 时间模式切换器（弹窗内） ============ */
+.time-mode-tabs {display: inline-flex;gap: 4px;padding: 4px;border-radius: 999px;background: rgba(130,150,190,.14);margin-bottom: 14px;}
+.time-mode-tabs button {border: none;background: transparent;color: var(--muted);padding: 8px 20px;border-radius: 999px;font-size: 13px;font-weight: 700;cursor: pointer;transition: all .2s;font-family: inherit;}
+.time-mode-tabs button.active {background: var(--card-solid);color: var(--accent);}
+
 /* ============ 表格 ============ */
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 table{width:100%;border-collapse:collapse;font-size:14px;}
@@ -155,14 +160,25 @@ td.op-cell button:last-child{margin-right:0;}
 #schedTable {border-collapse: separate;border-spacing: 0;width: max-content;}
 #schedTable th, #schedTable td {border-right: 1px solid var(--card-border);border-bottom: 1px solid var(--card-border);padding: 8px 10px;text-align: center;vertical-align: middle;background: var(--card-solid);}
 #schedTable th {position: sticky;top: 0;z-index: 3;font-size: 13px;font-weight: 700;color: var(--text);}
-#schedTable th:nth-child(1), #schedTable td:nth-child(1) {position: sticky;left: 0;z-index: 2;min-width: 90px;}
-#schedTable th:nth-child(2), #schedTable td:nth-child(2) {position: sticky;left: 90px;z-index: 2;min-width: 100px;}
-#schedTable th:nth-child(3), #schedTable td:nth-child(3) {position: sticky;left: 190px;z-index: 2;min-width: 140px;}
+#schedTable th:nth-child(1), #schedTable td:nth-child(1) {position: sticky;left: 0;z-index: 2;min-width: 118px;}
+#schedTable th:nth-child(2), #schedTable td:nth-child(2) {position: sticky;left: 118px;z-index: 2;min-width: 100px;}
+#schedTable th:nth-child(3), #schedTable td:nth-child(3) {position: sticky;left: 218px;z-index: 2;min-width: 140px;}
 #schedTable th:nth-child(1) {z-index: 4;}
 #schedTable th:nth-child(2) {z-index: 4;}
 #schedTable th:nth-child(3) {z-index: 4;}
 #schedTable input {border: none;background: transparent;text-align: center;outline: none;min-height: auto;padding: 4px;color: var(--text);}
 #schedTable input:focus {background: rgba(130,150,190,.15);border-radius: 6px;}
+
+/* 时间单元格：输入框 + 右侧快捷选择按钮 */
+#schedTable td.time-cell-td {position: relative;padding-right: 30px;}
+#schedTable td.time-cell-td input {font-size: 13px;padding-right: 22px;}
+.time-pick-btn {
+  position: absolute;right: 4px;top: 50%;transform: translateY(-50%);
+  background: transparent;border: none;cursor: pointer;font-size: 14px;color: var(--muted);
+  padding: 4px 6px;border-radius: 6px;transition: all .2s;line-height: 1;opacity: .55;
+}
+.time-pick-btn:hover {background: rgba(130,150,190,.15);color: var(--accent);opacity: 1;}
+
 .col-del-btn {display: inline-block;margin-left: 6px;color: #ef4444;cursor: pointer;font-size: 16px;font-weight: 900;vertical-align: middle;}
 .row-del-btn {color: #ef4444;background: transparent;border: none;cursor: pointer;font-size: 18px;padding: 4px 8px;}
 .check-box {width: 26px;height: 26px;border: 2px solid var(--card-border);border-radius: 6px;margin: 0 auto;cursor: pointer;display: flex;align-items: center;justify-content: center;background: transparent;transition: all 0.2s;}
@@ -269,9 +285,9 @@ td.op-cell button:last-child{margin-right:0;}
   .icon-btn .lbl{display:none;}
   main{padding:84px 12px 60px;}
   .card{padding:16px;}
-  #schedTable th:nth-child(1), #schedTable td:nth-child(1) {min-width: 70px;}
-  #schedTable th:nth-child(2), #schedTable td:nth-child(2) {left: 70px;min-width: 80px;}
-  #schedTable th:nth-child(3), #schedTable td:nth-child(3) {left: 150px;min-width: 110px;}
+  #schedTable th:nth-child(1), #schedTable td:nth-child(1) {min-width: 100px;}
+  #schedTable th:nth-child(2), #schedTable td:nth-child(2) {left: 100px;min-width: 80px;}
+  #schedTable th:nth-child(3), #schedTable td:nth-child(3) {left: 180px;min-width: 110px;}
 }
 </style>
 </head>
@@ -368,6 +384,7 @@ td.op-cell button:last-child{margin-right:0;}
       <div class="schedule-wrap">
         <table id="schedTable"><thead id="schedHead"></thead><tbody id="schedBody"></tbody></table>
       </div>
+      <p class="muted" style="margin:12px 0 0;font-size:12.5px;">💡 时间列支持手动输入（如 <b>08:00</b> 或 <b>08:00-09:30</b>），也可点右侧 ⏱ 按钮快速选择时间点或时间段。</p>
     </div>
   </section>
 
@@ -489,6 +506,16 @@ function getWeekKey(ts) { const d = new Date(ts); d.setHours(0,0,0,0); d.setDate
 function cssColor(name, fallback) {
   const v = getComputedStyle(document.body).getPropertyValue(name).trim();
   return v || fallback;
+}
+
+/* 解析时间字符串，判断是时间点还是时间段 */
+function parseTimeValue(str) {
+  const s = String(str || '').trim();
+  let m = s.match(/^(\d{1,2}:\d{2})\s*[-~—至]\s*(\d{1,2}:\d{2})$/);
+  if (m) return { mode: 'range', start: m[1], end: m[2] };
+  m = s.match(/^(\d{1,2}:\d{2})$/);
+  if (m) return { mode: 'point', point: m[1] };
+  return { mode: 'point', point: '' };
 }
 
 /* 导出与导入 */
@@ -616,7 +643,7 @@ function loadTimer() {
     timer.mode = s.mode === 'countup' ? 'countup' : 'countdown'; timer.totalMs = Number(s.totalMs) || 25 * 60 * 1000;
     timer.elapsedBase = Number(s.elapsedBase) || 0; timer.running = !!s.running; timer.runStart = s.runStart || null;
     if (timer.running && !timer.runStart) timer.runStart = Date.now();
-    // 跨夜/超时守卫：如果运行时超过 6 小时，多半是隔夜或忘记关，直接重置
+    // 跨夜/超时守卫
     if (timer.running && timer.runStart && (Date.now() - timer.runStart) > 6 * 3600 * 1000) {
       timer.running = false; timer.runStart = null; timer.elapsedBase = 0;
     }
@@ -805,6 +832,10 @@ function renderSched() {
     <th style="border-right:none; position:sticky; right:0; z-index:5; background:var(--card-solid);">操作</th></tr>`;
   body.innerHTML = schedData.rows.map(row => `
     <tr>${schedData.cols.map((col, idx) => {
+      if (col.id === 'c1') {
+        // 时间列：手动输入 + 快捷选择按钮
+        return `<td class="time-cell-td"><input type="text" value="${escAttr(row.cells[col.id] || '')}" data-row-id="${row.id}" data-col-id="${col.id}" class="cell-input" placeholder="08:00 / 08:00-09:30"><button class="time-pick-btn" data-row-id="${row.id}" title="快速选择时间">⏱</button></td>`;
+      }
       if (idx < 3) return `<td><input type="text" value="${escAttr(row.cells[col.id] || '')}" data-row-id="${row.id}" data-col-id="${col.id}" class="cell-input"></td>`;
       else { const state = row.cells[col.id] || 0; return `<td><div class="check-box ${state === 1 ? 'state-1' : state === 2 ? 'state-2' : ''}" data-row-id="${row.id}" data-col-id="${col.id}"></div></td>`; }
     }).join('')}
@@ -828,6 +859,10 @@ $('#schedHead').addEventListener('click', e => {
   }
 });
 $('#schedBody').addEventListener('click', e => {
+  // 时间列快捷选择按钮
+  const pickBtn = e.target.closest('.time-pick-btn');
+  if (pickBtn) { openTimePicker(pickBtn.dataset.rowId); return; }
+
   const box = e.target.closest('.check-box');
   if (box) {
     const rowId = box.dataset.rowId; const colId = box.dataset.colId; const row = schedData.rows.find(r => r.id === rowId);
@@ -850,19 +885,107 @@ $('#btnClearSched').addEventListener('click', () => {
   location.reload();
 });
 
-/* --- 新增：录入日程弹窗 → 自动汇总到日程表 --- */
+/* --- 时间选择弹窗（用于表格内某行的时间列） --- */
+function openTimePicker(rowId) {
+  const row = schedData.rows.find(r => r.id === rowId);
+  if (!row) return;
+  const current = row.cells.c1 || '';
+  const parsed = parseTimeValue(current);
+  const now = new Date();
+  const nowTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const endH = (now.getHours() + 1) % 24;
+  const endTime = `${pad2(endH)}:${pad2(now.getMinutes())}`;
+
+  const isRange = parsed.mode === 'range';
+  const pointVal = parsed.point || nowTime;
+  const startVal = parsed.start || nowTime;
+  const endVal = parsed.end || endTime;
+
+  openModal(`
+    <h3>⏱ 选择时间</h3>
+    <div class="time-mode-tabs" id="tpModeTabs">
+      <button type="button" data-mode="point" class="${isRange ? '' : 'active'}">时间点</button>
+      <button type="button" data-mode="range" class="${isRange ? 'active' : ''}">时间段</button>
+    </div>
+    <div id="tpPointBox" style="display:${isRange ? 'none' : 'flex'};gap:10px;">
+      <label class="field" style="flex:1;margin-bottom:0;"><span>时间</span><input type="time" id="tpTime" value="${pointVal}"></label>
+    </div>
+    <div id="tpRangeBox" style="display:${isRange ? 'flex' : 'none'};gap:10px;">
+      <label class="field" style="flex:1;margin-bottom:0;"><span>开始</span><input type="time" id="tpStart" value="${startVal}"></label>
+      <label class="field" style="flex:1;margin-bottom:0;"><span>结束</span><input type="time" id="tpEnd" value="${endVal}"></label>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="tpClear">清空</button>
+      <button class="ghost" id="tpCancel">取消</button>
+      <button class="primary" id="tpSave">确定</button>
+    </div>
+  `, (box, close) => {
+    let mode = isRange ? 'range' : 'point';
+    const tabs = box.querySelector('#tpModeTabs');
+    const pointBox = box.querySelector('#tpPointBox');
+    const rangeBox = box.querySelector('#tpRangeBox');
+    const setMode = (m) => {
+      mode = m;
+      tabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+      pointBox.style.display = m === 'point' ? 'flex' : 'none';
+      rangeBox.style.display = m === 'range' ? 'flex' : 'none';
+    };
+    tabs.querySelectorAll('button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+    box.querySelector('#tpCancel').onclick = close;
+    box.querySelector('#tpClear').onclick = () => {
+      row.cells.c1 = '';
+      saveSched(); renderSched(); close(); toast('已清空时间');
+    };
+    box.querySelector('#tpSave').onclick = () => {
+      let timeStr = '';
+      if (mode === 'point') {
+        const t = box.querySelector('#tpTime').value;
+        if (!t) { toast('请选择时间'); return; }
+        timeStr = t;
+      } else {
+        const s = box.querySelector('#tpStart').value;
+        const e = box.querySelector('#tpEnd').value;
+        if (!s || !e) { toast('请选择开始和结束时间'); return; }
+        if (s >= e) { toast('结束时间需晚于开始时间'); return; }
+        timeStr = `${s}-${e}`;
+      }
+      row.cells.c1 = timeStr;
+      saveSched(); renderSched(); close(); toast('时间已更新 ⏱');
+    };
+  });
+}
+
+/* --- 录入日程弹窗 → 自动汇总到日程表 --- */
 function openAddSchedModal() {
   const today = dateStr(new Date());
-  const nowTime = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
+  const now = new Date();
+  const nowTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const endH = (now.getHours() + 1) % 24;
+  const endTime = `${pad2(endH)}:${pad2(now.getMinutes())}`;
+
   openModal(`
     <h3>📝 添加日程</h3>
     <p class="muted" style="margin-top:-4px;">填写完成后会自动汇总到日程计划表对应日期列中。</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
-      <label class="field"><span>日期</span><input type="date" id="sdDate" value="${today}"></label>
-      <label class="field"><span>时间</span><input type="time" id="sdTime" value="${nowTime}"></label>
+    <label class="field"><span>日期</span><input type="date" id="sdDate" value="${today}"></label>
+
+    <label class="field"><span>时间类型</span></label>
+    <div class="time-mode-tabs" id="sdModeTabs" style="margin-top:-6px;">
+      <button type="button" data-mode="point" class="active">时间点</button>
+      <button type="button" data-mode="range">时间段</button>
     </div>
+
+    <div id="sdPointBox" style="display:flex;gap:10px;">
+      <label class="field" style="flex:1;margin-bottom:8px;"><span>时间</span><input type="time" id="sdTime" value="${nowTime}"></label>
+    </div>
+    <div id="sdRangeBox" style="display:none;gap:10px;">
+      <label class="field" style="flex:1;margin-bottom:8px;"><span>开始</span><input type="time" id="sdStart" value="${nowTime}"></label>
+      <label class="field" style="flex:1;margin-bottom:8px;"><span>结束</span><input type="time" id="sdEnd" value="${endTime}"></label>
+    </div>
+
     <label class="field"><span>项目（简短主题）</span><input type="text" id="sdProject" placeholder="例如：行测 / 英语 / 晨读"></label>
     <label class="field"><span>内容（详细安排）</span><input type="text" id="sdContent" placeholder="例如：资料分析 30 题 / 精听 BBC"></label>
+
     <div class="radio-row" style="margin-top:4px;">
       <label class="radio-chip" style="font-weight:600;"><input type="checkbox" id="sdMulti">连续添加（保存后不关闭）</label>
     </div>
@@ -871,17 +994,41 @@ function openAddSchedModal() {
       <button class="primary" id="sdSave">保存到日程表</button>
     </div>
   `, (box, close) => {
+    let timeMode = 'point';
+    const tabs = box.querySelector('#sdModeTabs');
+    const pointBox = box.querySelector('#sdPointBox');
+    const rangeBox = box.querySelector('#sdRangeBox');
+    const setMode = (m) => {
+      timeMode = m;
+      tabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+      pointBox.style.display = m === 'point' ? 'flex' : 'none';
+      rangeBox.style.display = m === 'range' ? 'flex' : 'none';
+    };
+    tabs.querySelectorAll('button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
     const projectEl = box.querySelector('#sdProject');
     setTimeout(() => projectEl.focus(), 80);
     box.querySelector('#sdCancel').onclick = close;
+
     box.querySelector('#sdSave').onclick = () => {
       const date = box.querySelector('#sdDate').value;
-      const time = box.querySelector('#sdTime').value;
       const project = projectEl.value.trim();
       const content = box.querySelector('#sdContent').value.trim();
       const multi = box.querySelector('#sdMulti').checked;
       if (!date) { toast('请选择日期'); return; }
-      if (!time) { toast('请选择时间'); return; }
+
+      let timeStr = '';
+      if (timeMode === 'point') {
+        const t = box.querySelector('#sdTime').value;
+        if (!t) { toast('请选择时间'); return; }
+        timeStr = t;
+      } else {
+        const s = box.querySelector('#sdStart').value;
+        const e = box.querySelector('#sdEnd').value;
+        if (!s || !e) { toast('请选择开始和结束时间'); return; }
+        if (s >= e) { toast('结束时间需晚于开始时间'); return; }
+        timeStr = `${s}-${e}`;
+      }
       if (!project && !content) { toast('项目或内容至少填一项'); return; }
 
       // 1. 找到或创建日期列
@@ -898,7 +1045,7 @@ function openAddSchedModal() {
 
       // 2. 生成新行
       const newRow = { id: uid(), cells: {} };
-      newRow.cells['c1'] = time;
+      newRow.cells['c1'] = timeStr;
       newRow.cells['c2'] = project;
       newRow.cells['c3'] = content;
       newRow.cells[dateCol.id] = 0;
@@ -912,7 +1059,7 @@ function openAddSchedModal() {
 
       toast(`已添加到 ${date} 的日程 ✨`);
       if (multi) {
-        // 连续添加：保留日期/时间，清空项目和内容，继续录入
+        // 连续添加：清空项目和内容，继续录入
         projectEl.value = '';
         box.querySelector('#sdContent').value = '';
         setTimeout(() => projectEl.focus(), 40);
@@ -975,17 +1122,18 @@ function openDailyPlan(date) {
   const listDiv = $('#dailyPlanList');
   if (!dateCol) { listDiv.innerHTML = '<div class="empty">当日暂无计划，请点击下方添加任务。</div>'; }
   else {
-    // 只显示在该日期列中有勾选状态的行（不含"永久项目"）
     const tasks = schedData.rows.filter(r => r.cells[dateCol.id] !== undefined);
     if (!tasks.length) listDiv.innerHTML = '<div class="empty">当日暂无计划。</div>';
     else {
       listDiv.innerHTML = tasks.map((row, idx) => {
         const photoKey = `photo_${date}`; const photoData = row.cells[photoKey] || '';
         const state = row.cells[dateCol.id] || 0;
+        // 时间段中间加空格更易读
+        const timeDisplay = String(row.cells.c1 || '').replace(/-/g, ' - ');
         return `<div class="plan-item">
           <div style="width:24px; height:24px; border-radius:6px; background:${state===1?'#22c55e':state===2?'#ef4444':'transparent'}; border:2px solid ${state===1?'#22c55e':state===2?'#ef4444':'var(--card-border)'}; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">${state===1?'✓':state===2?'✗':''}</div>
           <div class="plan-info">
-            <span class="plan-time">${escHtml(row.cells.c1 || '')}</span>
+            <span class="plan-time">${escHtml(timeDisplay)}</span>
             <span class="plan-title">${escHtml(row.cells.c2 || '')}</span>
             <span class="plan-desc">${escHtml(row.cells.c3 || '')}</span>
           </div>
@@ -1220,7 +1368,6 @@ function drawExamChart(labels, scores) {
 
   if (!scores.length) return;
 
-  // 用计算后的颜色，修复深色主题下图线消失的问题
   const C = {
     muted: cssColor('--muted', '#6d7b8e'),
     accent: cssColor('--accent', '#8b5cf6'),
@@ -1273,7 +1420,6 @@ function applyTheme(dark) {
   document.body.classList.toggle('dark', dark);
   $('#themeIcon').textContent = dark ? '☀️' : '🌙';
   store.set(K_THEME, dark);
-  // 重绘 canvas 图表（颜色变了）
   if (document.body.dataset.mode === 'pomo') drawPie();
   if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
     requestAnimationFrame(() => runAnalysis(_lastAnalysisIds));
@@ -1317,14 +1463,12 @@ function bindEvents() {
   window.addEventListener('resize', () => {
     if (document.body.dataset.mode === 'pomo') drawPie();
     if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
-      // 重绘图表（尺寸变了）
       const cv = $('#examChart'); if (cv) {
         const r = cv.parentElement.getBoundingClientRect();
         if (r.width > 0) runAnalysis(_lastAnalysisIds);
       }
     }
   });
-  // 关页面前清掉防抖保存一次，避免最后一次输入丢失
   window.addEventListener('beforeunload', () => {
     clearTimeout(schedSaveTimer);
     try {
