@@ -42,23 +42,16 @@ body.dark[data-mode="exam"] {--accent:#a78bfa;--accent2:#c4b5fd;}
 
 html,body{height:100%;}
 body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-  color:var(--text);
-  background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
-  background-attachment:fixed;
-  transition:background .6s ease,color .4s ease;
-  overflow-x:hidden;
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
-  touch-action:manipulation;
+  margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--text);background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
+  background-attachment:fixed;transition:background .6s ease,color .4s ease;
+  overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation;
 }
 
 /* ============ 背景漂浮图 ============ */
 #bgLayer{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none;}
 .float-img{
-  position:absolute;background-size:cover;background-position:center;
-  border-radius:24px;opacity:.16;filter:blur(.5px) saturate(.85);
+  position:absolute;background-size:cover;background-position:center;border-radius:24px;opacity:.16;filter:blur(.5px) saturate(.85);
   animation-name:drift;animation-timing-function:ease-in-out;animation-iteration-count:infinite;will-change:transform;
 }
 body.dark .float-img{opacity:.10;}
@@ -83,21 +76,15 @@ header{
   box-shadow:var(--shadow);overflow-x:auto;
 }
 .tabs button{
-  border:none;background:transparent;color:var(--muted);
-  padding:10px 18px;border-radius:999px;font-size:15px;font-weight:700;
-  cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap;
-  touch-action:manipulation;
+  border:none;background:transparent;color:var(--muted);padding:10px 18px;border-radius:999px;
+  font-size:15px;font-weight:700;cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap;touch-action:manipulation;
 }
-.tabs button.active{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.18);
-}
+.tabs button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.18);}
 .top-right{grid-column:3;justify-self:end;display:flex;gap:8px;}
 .icon-btn{
   border:1px solid var(--card-border);background:var(--card-bg);color:var(--text);
-  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  padding:10px 15px;border-radius:12px;font-size:14px;font-weight:600;
-  cursor:pointer;transition:.22s;font-family:inherit;box-shadow:var(--shadow);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);padding:10px 15px;border-radius:12px;
+  font-size:14px;font-weight:600;cursor:pointer;transition:.22s;font-family:inherit;box-shadow:var(--shadow);
   display:flex;align-items:center;gap:6px;min-height:44px;touch-action:manipulation;
 }
 .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
@@ -110,10 +97,8 @@ main{position:relative;z-index:10;padding:92px 18px 70px;max-width:1180px;margin
 
 /* ============ 卡片 / 按钮 ============ */
 .card{
-  background:var(--card-bg);border:1px solid var(--card-border);
-  border-radius:var(--radius);padding:22px;margin-bottom:20px;
-  box-shadow:var(--shadow);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
-  transition:background .4s,border-color .4s;
+  background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:22px;margin-bottom:20px;
+  box-shadow:var(--shadow);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);transition:background .4s,border-color .4s;
 }
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
 .card-head h3{margin:0;font-size:16px;font-weight:700;letter-spacing:.02em;}
@@ -121,16 +106,13 @@ main{position:relative;z-index:10;padding:92px 18px 70px;max-width:1180px;margin
 
 button{font-family:inherit;}
 .primary{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;border:none;padding:12px 22px;border-radius:12px;
-  font-weight:700;font-size:14px;cursor:pointer;transition:.22s;
-  box-shadow:0 6px 18px rgba(0,0,0,.14);min-height:44px;touch-action:manipulation;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:12px 22px;border-radius:12px;
+  font-weight:700;font-size:14px;cursor:pointer;transition:.22s;box-shadow:0 6px 18px rgba(0,0,0,.14);min-height:44px;touch-action:manipulation;
 }
 .primary:active{transform:scale(.98);}
 .ghost{
-  background:transparent;border:1px solid var(--card-border);color:var(--text);
-  padding:11px 18px;border-radius:12px;font-weight:600;font-size:14px;
-  cursor:pointer;transition:.22s;min-height:44px;touch-action:manipulation;
+  background:transparent;border:1px solid var(--card-border);color:var(--text);padding:11px 18px;border-radius:12px;
+  font-weight:600;font-size:14px;cursor:pointer;transition:.22s;min-height:44px;touch-action:manipulation;
 }
 .ghost:hover{border-color:var(--accent);color:var(--accent);}
 .ghost.danger:hover{border-color:#ef4444;color:#ef4444;}
@@ -139,9 +121,8 @@ button{font-family:inherit;}
 .big{padding:14px 34px;font-size:15px;}
 
 input[type=number],input[type=text],select,textarea{
-  background:rgba(255,255,255,.66);border:1px solid var(--card-border);color:var(--text);
-  border-radius:11px;padding:11px 13px;font-size:16px;font-family:inherit;
-  outline:none;transition:.22s;width:100%;min-height:44px;
+  background:rgba(255,255,255,.66);border:1px solid var(--card-border);color:var(--text);border-radius:11px;padding:11px 13px;
+  font-size:16px;font-family:inherit;outline:none;transition:.22s;width:100%;min-height:44px;
 }
 body.dark input[type=number],body.dark input[type=text],body.dark select,body.dark textarea{background:rgba(255,255,255,.06);}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(80,140,255,.16);}
@@ -158,136 +139,87 @@ td.op-cell button:last-child{margin-right:0;}
 .empty{text-align:center;color:var(--muted);padding:26px 0;font-size:14px;white-space:normal;}
 
 /* ============ 日程计划表 ============ */
-.schedule-wrap {
-  overflow-x: auto;-webkit-overflow-scrolling: touch;
-  max-height: 65vh;overflow-y: auto;
-  border-radius: 12px;border: 1px solid var(--card-border);
-}
-#schedTable { border-collapse: separate; border-spacing: 0; width: max-content; }
-#schedTable th, #schedTable td {
-  border-right: 1px solid var(--card-border);border-bottom: 1px solid var(--card-border);
-  padding: 8px 10px;text-align: center;vertical-align: middle;background: var(--card-solid);
-}
-#schedTable th { position: sticky; top: 0; z-index: 3; font-size: 13px; font-weight: 700; color: var(--text); }
-#schedTable th:nth-child(1), #schedTable td:nth-child(1) { position: sticky; left: 0; z-index: 2; min-width: 90px; }
-#schedTable th:nth-child(2), #schedTable td:nth-child(2) { position: sticky; left: 90px; z-index: 2; min-width: 100px; }
-#schedTable th:nth-child(3), #schedTable td:nth-child(3) { position: sticky; left: 190px; z-index: 2; min-width: 140px; }
-#schedTable th:nth-child(1) { z-index: 4; }
-#schedTable th:nth-child(2) { z-index: 4; }
-#schedTable th:nth-child(3) { z-index: 4; }
-#schedTable input { border: none; background: transparent; text-align: center; outline: none; min-height: auto; padding: 4px; color: var(--text); }
-#schedTable input:focus { background: rgba(130,150,190,.15); border-radius: 6px; }
-.col-del-btn { display: inline-block; margin-left: 6px; color: #ef4444; cursor: pointer; font-size: 16px; font-weight: 900; vertical-align: middle; }
-.row-del-btn { color: #ef4444; background: transparent; border: none; cursor: pointer; font-size: 18px; padding: 4px 8px; }
-.check-box {
-  width: 26px; height: 26px; border: 2px solid var(--card-border); border-radius: 6px;
-  margin: 0 auto; cursor: pointer; display: flex; align-items: center; justify-content: center;
-  background: transparent; transition: all 0.2s;
-}
-.check-box.state-1 { background: #22c55e; border-color: #22c55e; color: #fff; }
-.check-box.state-1::after { content: '✓'; font-weight: 900; font-size: 16px; }
-.check-box.state-2 { background: #ef4444; border-color: #ef4444; color: #fff; }
-.check-box.state-2::after { content: '✗'; font-weight: 900; font-size: 16px; }
+.schedule-wrap {overflow-x: auto;-webkit-overflow-scrolling: touch;max-height: 65vh;overflow-y: auto;border-radius: 12px;border: 1px solid var(--card-border);}
+#schedTable {border-collapse: separate;border-spacing: 0;width: max-content;}
+#schedTable th, #schedTable td {border-right: 1px solid var(--card-border);border-bottom: 1px solid var(--card-border);padding: 8px 10px;text-align: center;vertical-align: middle;background: var(--card-solid);}
+#schedTable th {position: sticky;top: 0;z-index: 3;font-size: 13px;font-weight: 700;color: var(--text);}
+#schedTable th:nth-child(1), #schedTable td:nth-child(1) {position: sticky;left: 0;z-index: 2;min-width: 90px;}
+#schedTable th:nth-child(2), #schedTable td:nth-child(2) {position: sticky;left: 90px;z-index: 2;min-width: 100px;}
+#schedTable th:nth-child(3), #schedTable td:nth-child(3) {position: sticky;left: 190px;z-index: 2;min-width: 140px;}
+#schedTable th:nth-child(1) {z-index: 4;}
+#schedTable th:nth-child(2) {z-index: 4;}
+#schedTable th:nth-child(3) {z-index: 4;}
+#schedTable input {border: none;background: transparent;text-align: center;outline: none;min-height: auto;padding: 4px;color: var(--text);}
+#schedTable input:focus {background: rgba(130,150,190,.15);border-radius: 6px;}
+.col-del-btn {display: inline-block;margin-left: 6px;color: #ef4444;cursor: pointer;font-size: 16px;font-weight: 900;vertical-align: middle;}
+.row-del-btn {color: #ef4444;background: transparent;border: none;cursor: pointer;font-size: 18px;padding: 4px 8px;}
+.check-box {width: 26px;height: 26px;border: 2px solid var(--card-border);border-radius: 6px;margin: 0 auto;cursor: pointer;display: flex;align-items: center;justify-content: center;background: transparent;transition: all 0.2s;}
+.check-box.state-1 {background: #22c55e;border-color: #22c55e;color: #fff;}
+.check-box.state-1::after {content: '✓';font-weight: 900;font-size: 16px;}
+.check-box.state-2 {background: #ef4444;border-color: #ef4444;color: #fff;}
+.check-box.state-2::after {content: '✗';font-weight: 900;font-size: 16px;}
 
-/* ============ 日历视图 ============ */
-#calendarOverlay {
-  position: fixed; inset: 0; z-index: 800; background: rgba(8,18,32,.6);
-  display: none; align-items: center; justify-content: center; padding: 20px;
-  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+/* ============ 月历抽屉 ============ */
+#drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(360px,92vw);background:var(--card-solid);border-left:1px solid var(--card-border);
+  z-index:900;transform:translateX(102%);transition:transform .38s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;
+  box-shadow:-24px 0 60px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom);
 }
-#calendarOverlay.active { display: flex; }
-.calendar-box {
-  background: var(--card-solid); border-radius: 20px; padding: 20px;
-  width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
-  border: 1px solid var(--card-border); animation: pop .3s ease;
-}
-.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 18px; font-weight: 700; }
-.cal-header button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text); padding: 0 10px; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
-.cal-weekday { font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 5px; }
-.cal-day {
-  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 10px; cursor: pointer; font-size: 15px; position: relative; transition: background .2s;
-}
-.cal-day:hover { background: rgba(130,150,190,.15); }
-.cal-day.today { border: 2px solid var(--accent); color: var(--accent); font-weight: bold; }
-.cal-day.other-month { opacity: 0.3; }
-.cal-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; }
-.dot-green { background: #22c55e; }
-.dot-red { background: #ef4444; }
-.dot-yellow { background: #f59e0b; }
+#drawer.open{transform:translateX(0);}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--card-border);padding-top:calc(18px + env(safe-area-inset-top));}
+.drawer-head h3{margin:0;font-size:16px;}
+.drawer-body{padding:20px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
+.cal-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 20px;font-size: 18px;font-weight: 700;}
+.cal-header button {background: none;border: none;font-size: 24px;cursor: pointer;color: var(--text);padding: 0 10px;}
+.cal-grid {display: grid;grid-template-columns: repeat(7, 1fr);gap: 6px;text-align: center;}
+.cal-weekday {font-size: 12px;color: var(--muted);font-weight: 700;margin-bottom: 5px;}
+.cal-day {aspect-ratio: 1;display: flex;flex-direction: column;align-items: center;justify-content: center;border-radius: 10px;cursor: pointer;font-size: 15px;position: relative;transition: background .2s;}
+.cal-day:hover {background: rgba(130,150,190,.15);}
+.cal-day.today {border: 2px solid var(--accent);color: var(--accent);font-weight: bold;}
+.cal-day.other-month {opacity: 0.3;}
+.cal-dot {width: 6px;height: 6px;border-radius: 50%;margin-top: 4px;}
+.dot-green {background: #22c55e;}
+.dot-red {background: #ef4444;}
+.dot-yellow {background: #f59e0b;}
 
-/* ============ 当日计划弹窗 ============ */
-#dailyPlanOverlay {
-  position: fixed; inset: 0; z-index: 810; background: rgba(8,18,32,.7);
-  display: none; align-items: flex-start; justify-content: center; padding: 40px 20px;
-  overflow-y: auto; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
-}
-#dailyPlanOverlay.active { display: flex; }
-.daily-box {
-  background: var(--card-solid); border-radius: 20px; padding: 20px;
-  width: 100%; max-width: 600px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
-  border: 1px solid var(--card-border); margin: auto 0;
-}
-.plan-item {
-  display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--card-border);
-}
-.plan-item:last-child { border-bottom: none; }
-.plan-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.plan-time { font-size: 12px; color: var(--muted); font-weight: bold; }
-.plan-title { font-size: 15px; font-weight: 600; }
-.plan-desc { font-size: 13px; color: var(--muted); }
-.photo-btn {
-  width: 40px; height: 40px; border-radius: 10px; border: 1px dashed var(--card-border);
-  display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer;
-  background: rgba(130,150,190,.1); transition: all .2s; flex-shrink: 0; overflow: hidden;
-}
-.photo-btn:hover { border-color: var(--accent); }
-.photo-btn img { width: 100%; height: 100%; object-fit: cover; }
-.photo-btn.has-photo { border-style: solid; border-color: var(--accent); }
+/* ============ 当日计划弹层 ============ */
+#dailyPlanOverlay {position: fixed;inset: 0;z-index: 1000;background: rgba(8,18,32,.7);display: none;align-items: flex-start;justify-content: center;padding: 40px 20px;overflow-y: auto;-webkit-backdrop-filter: blur(5px);backdrop-filter: blur(5px);}
+#dailyPlanOverlay.active {display: flex;}
+.daily-box {background: var(--card-solid);border-radius: 20px;padding: 20px;width: 100%;max-width: 600px;box-shadow: 0 20px 60px rgba(0,0,0,.3);border: 1px solid var(--card-border);margin: auto 0;}
+.plan-item {display: flex;align-items: center;gap: 10px;padding: 12px;border-bottom: 1px solid var(--card-border);}
+.plan-item:last-child {border-bottom: none;}
+.plan-info {flex: 1;display: flex;flex-direction: column;gap: 4px;}
+.plan-time {font-size: 12px;color: var(--muted);font-weight: bold;}
+.plan-title {font-size: 15px;font-weight: 600;}
+.plan-desc {font-size: 13px;color: var(--muted);}
+.photo-btn {width: 40px;height: 40px;border-radius: 10px;border: 1px dashed var(--card-border);display: flex;align-items: center;justify-content: center;font-size: 20px;cursor: pointer;background: rgba(130,150,190,.1);transition: all .2s;flex-shrink: 0;overflow: hidden;}
+.photo-btn:hover {border-color: var(--accent);}
+.photo-btn img {width: 100%;height: 100%;object-fit: cover;}
+.photo-btn.has-photo {border-style: solid;border-color: var(--accent);}
 
 /* ============ 行测统计表 ============ */
-.exam-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-height: 70vh; border-radius: 12px; border: 1px solid var(--card-border); }
-#examTable { border-collapse: separate; border-spacing: 0; width: max-content; }
-#examTable th, #examTable td {
-  border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);
-  padding: 8px 10px; text-align: center; background: var(--card-solid); white-space: nowrap;
-}
-#examTable th { position: sticky; top: 0; z-index: 3; font-size: 13px; font-weight: 700; color: var(--text); }
-#examTable input { width: 60px; border: none; background: transparent; text-align: center; outline: none; font-size: 14px; color: var(--text); }
-#examTable input[type="text"] { width: 100px; }
-#examTable input:focus { background: rgba(130,150,190,.15); border-radius: 6px; }
+.exam-table-wrap {overflow-x: auto;-webkit-overflow-scrolling: touch;max-height: 70vh;border-radius: 12px;border: 1px solid var(--card-border);}
+#examTable {border-collapse: separate;border-spacing: 0;width: max-content;}
+#examTable th, #examTable td {border-right: 1px solid var(--card-border);border-bottom: 1px solid var(--card-border);padding: 11px 12px;text-align: center;background: var(--card-solid);white-space: nowrap;}
+#examTable th {position: sticky;top: 0;z-index: 3;font-size: 13px;font-weight: 700;color: var(--text);}
+#examTable td {font-size: 14px;}
+#examTable a {color:var(--accent);text-decoration:none;font-weight:bold;}
 
 /* ============ 数据分析与折线图 ============ */
-.analysis-panel {
-  margin-top: 20px; padding: 20px; border-radius: 14px;
-  background: rgba(130,150,190,.08); border: 1px dashed var(--card-border);
-}
-.chart-container { width: 100%; height: 250px; margin-top: 15px; }
-#examChart { width: 100%; height: 100%; }
-.analysis-text { margin-top: 15px; font-size: 14px; line-height: 1.8; }
-.analysis-text b { color: var(--accent); }
+.analysis-panel {margin-top: 20px;padding: 20px;border-radius: 14px;background: rgba(130,150,190,.08);border: 1px dashed var(--card-border);}
+.chart-container {width: 100%;height: 250px;margin-top: 15px;}
+#examChart {width: 100%;height: 100%;}
+.analysis-text {margin-top: 15px;font-size: 14px;line-height: 1.8;}
+.analysis-text b {color: var(--accent);}
 
 /* ============ 弹窗基础 ============ */
-#modalRoot{position:fixed;inset:0;z-index:1000;display:none;}
+#modalRoot{position:fixed;inset:0;z-index:1100;display:none;}
 #modalRoot.show{display:block;}
-.modal-mask{
-  position:absolute;inset:0;background:rgba(8,18,32,.5);
-  display:flex;align-items:flex-start;justify-content:center;
-  overflow-y:auto;padding:clamp(16px,9vh,90px) 16px 48px;
-  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
-}
-.modal-box{
-  width:min(460px,100%);background:var(--card-solid);
-  border:1px solid var(--card-border);border-radius:20px;padding:26px;
-  box-shadow:0 26px 70px rgba(0,0,0,.35);margin:auto 0;
-}
+.modal-mask{position:absolute;inset:0;background:rgba(8,18,32,.5);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:clamp(16px,9vh,90px) 16px 48px;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);}
+.modal-box{width:min(500px,100%);background:var(--card-solid);border:1px solid var(--card-border);border-radius:20px;padding:26px;box-shadow:0 26px 70px rgba(0,0,0,.35);margin:auto 0;}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap;}
 .radio-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
-.radio-chip{
-  display:flex;align-items:center;gap:7px;padding:11px 16px;border-radius:11px;
-  border:1px solid var(--card-border);cursor:pointer;font-size:14px;font-weight:600;
-}
+.radio-chip{display:flex;align-items:center;gap:7px;padding:11px 16px;border-radius:11px;border:1px solid var(--card-border);cursor:pointer;font-size:14px;font-weight:600;}
 .radio-chip input{accent-color:var(--accent);width:18px;height:18px;}
 
 /* ============ Toast / 闪烁 ============ */
@@ -300,7 +232,6 @@ td.op-cell button:last-child{margin-right:0;}
 /* ============ 其他 ============ */
 .shake{animation:shake .5s;border-color:#ef4444 !important;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
-
 #flipClockOverlay{position:fixed;inset:0;z-index:999;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;}
 #flipClockOverlay.active{display:flex;}
 .flip-wrap{display:flex;gap:min(2vw,2vh);align-items:center;justify-content:center;margin-top:-5vh;}
@@ -326,9 +257,9 @@ td.op-cell button:last-child{margin-right:0;}
   .icon-btn .lbl{display:none;}
   main{padding:84px 12px 60px;}
   .card{padding:16px;}
-  #schedTable th:nth-child(1), #schedTable td:nth-child(1) { min-width: 70px; }
-  #schedTable th:nth-child(2), #schedTable td:nth-child(2) { left: 70px; min-width: 80px; }
-  #schedTable th:nth-child(3), #schedTable td:nth-child(3) { left: 150px; min-width: 110px; }
+  #schedTable th:nth-child(1), #schedTable td:nth-child(1) {min-width: 70px;}
+  #schedTable th:nth-child(2), #schedTable td:nth-child(2) {left: 70px;min-width: 80px;}
+  #schedTable th:nth-child(3), #schedTable td:nth-child(3) {left: 150px;min-width: 110px;}
 }
 </style>
 </head>
@@ -346,7 +277,7 @@ td.op-cell button:last-child{margin-right:0;}
   </nav>
   <div class="top-right">
     <button class="icon-btn" id="btnFullscreen"><span>⛶</span><span class="lbl">全屏</span></button>
-    <button class="icon-btn" id="btnSticky"><span>📝</span><span class="lbl">便利贴</span></button>
+    <button class="icon-btn" id="btnSticky"><span>📅</span><span class="lbl">月历</span></button>
     <button class="icon-btn" id="btnTheme"><span id="themeIcon">🌙</span><span class="lbl">夜间</span></button>
   </div>
 </header>
@@ -414,7 +345,6 @@ td.op-cell button:last-child{margin-right:0;}
       <div class="card-head">
         <h3>📅 日程计划表</h3>
         <div class="head-tools">
-          <button id="btnOpenCalendar" class="primary mini">📅 展开月历</button>
           <button id="btnAddSchedRow" class="ghost mini">+ 添加行</button>
           <button id="btnAddSchedCol" class="ghost mini">+ 添加日期列</button>
           <button id="btnClearSched" class="ghost mini danger">清空重置</button>
@@ -433,7 +363,7 @@ td.op-cell button:last-child{margin-right:0;}
         <h3>📊 行测成绩统计表</h3>
         <div class="head-tools">
           <button id="btnAnalyzeExam" class="primary mini">📈 数据分析</button>
-          <button id="btnAddExamRow" class="ghost mini">+ 添加记录</button>
+          <button id="btnAddExamRow" class="ghost mini">+ 录入成绩</button>
           <button id="btnClearExam" class="ghost mini danger">清空</button>
         </div>
       </div>
@@ -442,9 +372,8 @@ td.op-cell button:last-child{margin-right:0;}
           <thead>
             <tr>
               <th>年份</th><th>试卷名称</th><th>总分</th>
-              <th>政治理论<br>错/得</th><th>常识判断<br>错/得</th>
-              <th>言语理解<br>错/得</th><th>数量关系<br>错/得</th>
-              <th>推理判断<br>错/得</th><th>资料分析<br>错/得</th>
+              <th>政治理论</th><th>常识判断</th><th>言语理解</th>
+              <th>数量关系</th><th>推理判断</th><th>资料分析</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -460,20 +389,21 @@ td.op-cell button:last-child{margin-right:0;}
   </section>
 </main>
 
-<!-- 日历弹层 -->
-<div id="calendarOverlay">
-  <div class="calendar-box">
+<!-- 月历抽屉 -->
+<aside id="drawer">
+  <div class="drawer-head">
+    <h3>📅 月历</h3>
+    <button class="ghost mini" id="btnCloseDrawer">关闭</button>
+  </div>
+  <div class="drawer-body">
     <div class="cal-header">
       <button id="calPrevBtn">‹</button>
       <span id="calTitle">2026年11月</span>
       <button id="calNextBtn">›</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-    <div style="text-align:right;margin-top:15px;">
-      <button class="ghost mini" id="btnCloseCalendar">关闭</button>
-    </div>
   </div>
-</div>
+</aside>
 
 <!-- 当日计划弹层 -->
 <div id="dailyPlanOverlay">
@@ -491,20 +421,6 @@ td.op-cell button:last-child{margin-right:0;}
 
 <!-- 隐藏的图片上传控件 -->
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
-
-<aside id="drawer" style="position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);background:var(--card-solid);border-left:1px solid var(--card-border);z-index:900;transform:translateX(102%);transition:transform .38s;display:flex;flex-direction:column;box-shadow:-24px 0 60px rgba(0,0,0,.2);">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--card-border);">
-    <h3 style="margin:0;font-size:16px;">📝 便利贴</h3>
-    <button class="ghost mini" id="btnCloseDrawer">关闭</button>
-  </div>
-  <div style="padding:16px 20px;overflow-y:auto;flex:1;">
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-      <textarea id="stickyInput" placeholder="随手记点什么…" style="resize:vertical;min-height:78px;"></textarea>
-      <button class="primary" id="btnAddSticky">添加便签</button>
-    </div>
-    <div id="stickyList"></div>
-  </div>
-</aside>
 
 <div id="flipClockOverlay">
   <div class="flip-wrap">
@@ -534,9 +450,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { console.error('存储失败', e); } }
 };
 
-const K_REC = 'tt_records_v1', K_TIMER = 'tt_timer_v1', K_STICKY = 'tt_sticky_v1', 
-      K_THEME = 'tt_theme_v1', K_MODE = 'tt_mode_v1', K_LASTPJ = 'tt_last_project', 
-      K_SCHED = 'tt_sched_v1', K_EXAM = 'tt_exam_v1';
+const K_REC = 'tt_records_v1', K_TIMER = 'tt_timer_v1', K_THEME = 'tt_theme_v1', K_MODE = 'tt_mode_v1', K_LASTPJ = 'tt_last_project', K_SCHED = 'tt_sched_v1', K_EXAM = 'tt_exam_v1';
 
 let _toastTimer = null;
 function toast(msg) {
@@ -686,7 +600,7 @@ function applyMinutes() {
 }
 
 /* =====================================================================
-   4. 弹窗系统 & 基础记录表
+   4. 弹窗 & 基础记录表
    ===================================================================== */
 let _modalCloseHandler = null;
 function openModal(html, onMount) {
@@ -793,7 +707,7 @@ function drawPie() {
 }
 
 /* =====================================================================
-   6. 日程计划表 & 月历 & 照片打卡
+   6. 日程计划表 & 月历抽屉 & 照片打卡
    ===================================================================== */
 let schedData = store.get(K_SCHED, null);
 const TODAY_STR = dateStr(new Date());
@@ -855,7 +769,7 @@ $('#btnAddSchedCol').addEventListener('click', () => {
 });
 $('#btnClearSched').addEventListener('click', () => { if (!confirm('确定要清空整个表格并重置吗？')) return; store.removeItem(K_SCHED); location.reload(); });
 
-/* --- 月历视图 --- */
+/* --- 月历视图（放在抽屉里） --- */
 let currentCalYear = new Date().getFullYear(); let currentCalMonth = new Date().getMonth();
 function renderCalendar() {
   const grid = $('#calGrid'); const title = $('#calTitle'); title.textContent = `${currentCalYear}年${currentCalMonth + 1}月`;
@@ -884,8 +798,13 @@ function updateCalendarDots() {
     else dot.className = 'cal-dot dot-yellow';
   });
 }
-$('#btnOpenCalendar').addEventListener('click', () => { $('#calendarOverlay').classList.add('active'); renderCalendar(); });
-$('#btnCloseCalendar').addEventListener('click', () => $('#calendarOverlay').classList.remove('active'));
+$('#btnSticky').addEventListener('click', () => {
+  $('#drawer').classList.add('open'); $('#drawer').style.transform = 'translateX(0)';
+  renderCalendar();
+});
+$('#btnCloseDrawer').addEventListener('click', () => {
+  $('#drawer').classList.remove('open'); $('#drawer').style.transform = 'translateX(102%)';
+});
 $('#calPrevBtn').addEventListener('click', () => { currentCalMonth--; if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; } renderCalendar(); });
 $('#calNextBtn').addEventListener('click', () => { currentCalMonth++; if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; } renderCalendar(); });
 
@@ -931,9 +850,7 @@ $('#btnAddDailyTask').addEventListener('click', () => {
 });
 
 let currentPhotoRowId = null;
-window.triggerPhoto = function(rowId) {
-  currentPhotoRowId = rowId; $('#photoInput').click();
-};
+window.triggerPhoto = function(rowId) { currentPhotoRowId = rowId; $('#photoInput').click(); };
 $('#photoInput').addEventListener('change', function(e) {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -953,56 +870,115 @@ $('#photoInput').addEventListener('change', function(e) {
   reader.readAsDataURL(file); this.value = '';
 });
 
-
 /* =====================================================================
    7. 行测成绩统计与数据分析
    ===================================================================== */
+const MODULES = ['政治理论', '常识判断', '言语理解', '数量关系', '推理判断', '资料分析'];
+const MODULE_KEYS = ['t1', 't2', 't3', 't4', 't5', 't6'];
 let examData = store.get(K_EXAM, []);
-if (!examData.length) {
-  examData = [ { id: uid(), year: '2024', paper: '国考副省级', total: '75', t1_w: '2', t1_s: '8', t2_w: '3', t2_s: '12', t3_w: '5', t3_s: '20', t4_w: '4', t4_s: '10', t5_w: '6', t5_s: '22', t6_w: '4', t6_s: '18' } ];
-  store.set(K_EXAM, examData);
+// 兼容老数据结构
+if (examData.length && examData[0].t1_s !== undefined && examData[0].t1_t === undefined) {
+  examData.forEach(r => {
+    MODULE_KEYS.forEach(k => {
+      r[k + '_t'] = (parseFloat(r[k + '_w']) || 0) + (parseFloat(r[k + '_s']) || 0);
+    });
+  });
 }
 function saveExam() { store.set(K_EXAM, examData); }
 
 function renderExamTable() {
   const body = $('#examBody');
-  if (!examData.length) { body.innerHTML = '<tr><td colspan="10" class="empty">暂无成绩记录，点击上方添加。</td></tr>'; return; }
-  body.innerHTML = examData.map(r => `
-    <tr>
-      <td><input type="text" value="${escAttr(r.year)}" data-id="${r.id}" data-field="year"></td>
-      <td><input type="text" value="${escAttr(r.paper)}" data-id="${r.id}" data-field="paper"></td>
-      <td><input type="text" value="${escAttr(r.total)}" data-id="${r.id}" data-field="total"></td>
-      <td><input type="text" value="${escAttr(r.t1_w)}" data-id="${r.id}" data-field="t1_w" style="width:30px"> / <input type="text" value="${escAttr(r.t1_s)}" data-id="${r.id}" data-field="t1_s" style="width:30px"></td>
-      <td><input type="text" value="${escAttr(r.t2_w)}" data-id="${r.id}" data-field="t2_w" style="width:30px"> / <input type="text" value="${escAttr(r.t2_s)}" data-id="${r.id}" data-field="t2_s" style="width:30px"></td>
-      <td><input type="text" value="${escAttr(r.t3_w)}" data-id="${r.id}" data-field="t3_w" style="width:30px"> / <input type="text" value="${escAttr(r.t3_s)}" data-id="${r.id}" data-field="t3_s" style="width:30px"></td>
-      <td><input type="text" value="${escAttr(r.t4_w)}" data-id="${r.id}" data-field="t4_w" style="width:30px"> / <input type="text" value="${escAttr(r.t4_s)}" data-id="${r.id}" data-field="t4_s" style="width:30px"></td>
-      <td><input type="text" value="${escAttr(r.t5_w)}" data-id="${r.id}" data-field="t5_w" style="width:30px"> / <input type="text" value="${escAttr(r.t5_s)}" data-id="${r.id}" data-field="t5_s" style="width:30px"></td>
-      <td><input type="text" value="${escAttr(r.t6_w)}" data-id="${r.id}" data-field="t6_w" style="width:30px"> / <input type="text" value="${escAttr(r.t6_s)}" data-id="${r.id}" data-field="t6_s" style="width:30px"></td>
-      <td><button class="row-del-btn" data-id="${r.id}">🗑️</button></td>
-    </tr>
-  `).join('');
+  if (!examData.length) { body.innerHTML = '<tr><td colspan="10" class="empty">暂无成绩记录，点击上方录入。</td></tr>'; return; }
+  body.innerHTML = examData.map(r => {
+    let rateHtml = '';
+    MODULES.forEach((m, i) => {
+      const k = 't' + (i+1);
+      const w = parseFloat(r[k+'_w']) || 0;
+      const t = parseFloat(r[k+'_t']) || 0;
+      let rateStr = '--';
+      if (t > 0) {
+        const pct = ((t - w) / t * 100);
+        const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+        rateStr = `<span style="color:${color}; font-weight:bold;">${pct.toFixed(1)}%</span>`;
+      }
+      rateHtml += `<td>${rateStr}</td>`;
+    });
+    return `<tr>
+      <td>${escHtml(r.year)}</td>
+      <td><a href="javascript:void(0)" onclick="openExamModal('${r.id}')">${escHtml(r.paper)}</a></td>
+      <td>${escHtml(r.total)}</td>
+      ${rateHtml}
+      <td class="op-cell">
+        <button class="ghost mini" onclick="openExamModal('${r.id}')">编辑</button>
+        <button class="ghost mini danger" onclick="delExam('${r.id}')">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
-$('#examBody').addEventListener('input', e => {
-  if (e.target.tagName !== 'INPUT') return;
-  const id = e.target.dataset.id; const field = e.target.dataset.field; const row = examData.find(r => r.id === id);
-  if (row) { row[field] = e.target.value; clearTimeout(window._examSaveTimer); window._examSaveTimer = setTimeout(saveExam, 500); }
-});
-$('#examBody').addEventListener('click', e => {
-  if (e.target.closest('.row-del-btn')) {
-    if (!confirm('确定删除此条成绩吗？')) return;
-    const id = e.target.closest('.row-del-btn').dataset.id; examData = examData.filter(r => r.id !== id); saveExam(); renderExamTable();
-  }
-});
-$('#btnAddExamRow').addEventListener('click', () => {
-  examData.push({ id: uid(), year: new Date().getFullYear().toString(), paper: '新试卷', total: '0', t1_w: '0', t1_s: '0', t2_w: '0', t2_s: '0', t3_w: '0', t3_s: '0', t4_w: '0', t4_s: '0', t5_w: '0', t5_s: '0', t6_w: '0', t6_s: '0' });
+
+window.delExam = function(id) {
+  if (!confirm('确定删除此条成绩吗？')) return;
+  examData = examData.filter(r => r.id !== id);
   saveExam(); renderExamTable();
-});
+};
+
+window.openExamModal = function(id) {
+  const isEdit = !!id;
+  const row = isEdit ? examData.find(r => r.id === id) : { id: uid(), year: new Date().getFullYear().toString(), paper: '', total: '', t1_w:'', t1_t:'', t2_w:'', t2_t:'', t3_w:'', t3_t:'', t4_w:'', t4_t:'', t5_w:'', t5_t:'', t6_w:'', t6_t:'' };
+  
+  openModal(`
+    <h3>${isEdit ? '✏️ 修改成绩' : '➕ 录入成绩'}</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
+      <label class="field"><span>年份</span><input type="text" id="eYear" value="${escAttr(row.year)}" placeholder="2024"></label>
+      <label class="field" style="grid-column: span 2;"><span>试卷名称</span><input type="text" id="ePaper" value="${escAttr(row.paper)}" placeholder="国考/省考/模拟卷"></label>
+    </div>
+    <label class="field" style="margin-bottom:15px;"><span>试卷总分</span><input type="number" id="eTotal" value="${escAttr(row.total)}" placeholder="例如 75"></label>
+    
+    <div style="margin-top:15px; border-top:1px dashed var(--card-border); padding-top:15px;">
+      <p class="muted" style="margin-bottom:10px;">请输入每个模块的错题数和总题数，系统自动计算正确率：</p>
+      ${MODULES.map((m, i) => {
+        const k = 't' + (i+1);
+        return `<div style="display:grid; grid-template-columns: 80px 1fr 1fr; gap:10px; align-items:center; margin-bottom:8px;">
+          <span style="font-size:14px; font-weight:600;">${m}</span>
+          <label class="field" style="flex-direction:row; align-items:center; gap:5px; margin:0;"><span style="font-size:12px;">错题</span><input type="number" id="eW_${i+1}" value="${escAttr(row[k+'_w'] || '')}" style="min-height:36px; padding:6px;"></label>
+          <label class="field" style="flex-direction:row; align-items:center; gap:5px; margin:0;"><span style="font-size:12px;">总题</span><input type="number" id="eT_${i+1}" value="${escAttr(row[k+'_t'] || '')}" style="min-height:36px; padding:6px;"></label>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="eCancel">取消</button>
+      <button class="primary" id="eSave">保存</button>
+    </div>
+  `, (box, close) => {
+    box.querySelector('#eCancel').onclick = close;
+    box.querySelector('#eSave').onclick = () => {
+      const year = box.querySelector('#eYear').value.trim() || '2024';
+      const paper = box.querySelector('#ePaper').value.trim() || '未命名试卷';
+      const total = parseFloat(box.querySelector('#eTotal').value) || 0;
+      
+      const newRow = { id: row.id, year, paper, total };
+      MODULES.forEach((m, i) => {
+        const w = parseFloat(box.querySelector(`#eW_${i+1}`).value) || 0;
+        const t = parseFloat(box.querySelector(`#eT_${i+1}`).value) || 0;
+        newRow[`t${i+1}_w`] = w;
+        newRow[`t${i+1}_t`] = t;
+      });
+      
+      if (isEdit) {
+        const idx = examData.findIndex(r => r.id === id);
+        examData[idx] = newRow;
+      } else {
+        examData.push(newRow);
+      }
+      saveExam(); renderExamTable(); close(); toast('保存成功 📊');
+    };
+  });
+};
+
+$('#btnAddExamRow').addEventListener('click', () => openExamModal(null));
 $('#btnClearExam').addEventListener('click', () => { if (!confirm('确定清空所有成绩记录吗？')) return; examData = []; saveExam(); renderExamTable(); $('#examAnalysisPanel').style.display = 'none'; });
 
 /* --- 数据分析 --- */
-const MODULES = ['政治理论', '常识判断', '言语理解', '数量关系', '推理判断', '资料分析'];
-const MODULE_KEYS = ['t1', 't2', 't3', 't4', 't5', 't6'];
-
 $('#btnAnalyzeExam').addEventListener('click', () => {
   if (examData.length < 1) { toast('请至少录入一条成绩记录'); return; }
   openModal(`
@@ -1035,9 +1011,9 @@ function runAnalysis(ids) {
   let textHtml = `<p>本次分析了 <b>${selected.length}</b> 套试卷。</p>`;
   
   const moduleStats = MODULE_KEYS.map((k, i) => {
-    let totalQ = 0; let totalS = 0;
-    selected.forEach(r => { totalQ += (parseFloat(r[k + '_w']) || 0) + (parseFloat(r[k + '_s']) || 0); totalS += parseFloat(r[k + '_s']) || 0; });
-    const rate = totalQ > 0 ? totalS / totalQ : 0;
+    let totalQ = 0; let totalW = 0;
+    selected.forEach(r => { totalQ += (parseFloat(r[k + '_t']) || 0); totalW += (parseFloat(r[k + '_w']) || 0); });
+    const rate = totalQ > 0 ? (totalQ - totalW) / totalQ : 0;
     if (rate < minRate && totalQ > 0) { minRate = rate; weakModule = MODULES[i]; }
     return { name: MODULES[i], rate, totalQ };
   }).filter(m => m.totalQ > 0);
@@ -1045,7 +1021,7 @@ function runAnalysis(ids) {
   if (weakModule) {
     textHtml += `<p>🎯 <b>最薄弱模块：</b>综合分析，你在 <b style="color:#ef4444">${weakModule}</b> 模块的正确率相对较低（约 ${(minRate*100).toFixed(1)}%），建议接下来重点刷该模块的专项题。</p>`;
   } else {
-    textHtml += `<p>🎯 录入的数据缺少各模块的详细得分，无法进行薄弱点分析。</p>`;
+    textHtml += `<p>🎯 录入的数据缺少各模块的详细答题数，无法进行薄弱点分析。</p>`;
   }
 
   const trends = [];
@@ -1054,7 +1030,7 @@ function runAnalysis(ids) {
     const half = Math.floor(selected.length / 2);
     const p1 = selected.slice(0, half); const p2 = selected.slice(half);
     const getRate = arr => {
-      let tq = 0, ts = 0; arr.forEach(r => { tq += (parseFloat(r[k+'_w'])||0) + (parseFloat(r[k+'_s'])||0); ts += parseFloat(r[k+'_s'])||0; }); return tq ? ts/tq : 0;
+      let tq = 0, tw = 0; arr.forEach(r => { tq += (parseFloat(r[k+'_t'])||0); tw += (parseFloat(r[k+'_w'])||0); }); return tq ? (tq - tw)/tq : 0;
     };
     const r1 = getRate(p1); const r2 = getRate(p2);
     if (r1 > 0 && r2 > 0) trends.push({ name: MODULES[i], diff: r2 - r1, r1, r2 });
@@ -1091,7 +1067,6 @@ function drawExamChart(labels, scores) {
   const maxScore = Math.max(...scores, 100);
   const yScale = chartH / maxScore;
   
-  // Y轴
   ctx.strokeStyle = 'rgba(130,150,190,.2)'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = padding.top + chartH - (i * chartH / 4);
@@ -1100,7 +1075,6 @@ function drawExamChart(labels, scores) {
     ctx.fillText(Math.round(i * maxScore / 4), padding.left - 8, y);
   }
   
-  // X轴与折线
   const stepX = chartW / Math.max(1, scores.length - 1);
   const points = scores.map((s, i) => ({ x: padding.left + i * stepX, y: padding.top + chartH - s * yScale }));
   
@@ -1108,7 +1082,6 @@ function drawExamChart(labels, scores) {
   points.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
   ctx.stroke();
   
-  // 填充
   ctx.lineTo(points[points.length-1].x, padding.top + chartH);
   ctx.lineTo(points[0].x, padding.top + chartH);
   ctx.closePath();
@@ -1116,7 +1089,6 @@ function drawExamChart(labels, scores) {
   grad.addColorStop(0, 'rgba(139,92,246,0.3)'); grad.addColorStop(1, 'rgba(139,92,246,0.01)');
   ctx.fillStyle = grad; ctx.fill();
   
-  // 点和文字
   points.forEach((p, i) => {
     ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fillStyle = 'var(--card-solid)'; ctx.fill(); ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 3; ctx.stroke();
     ctx.fillStyle = 'var(--muted)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
@@ -1127,29 +1099,8 @@ function drawExamChart(labels, scores) {
 }
 
 /* =====================================================================
-   8. 便利贴 & 基础初始化
+   8. 全局初始化 & 绑定
    ===================================================================== */
-let stickies = store.get(K_STICKY, []); if (!Array.isArray(stickies)) stickies = [];
-function saveStickies() { store.set(K_STICKY, stickies); }
-function renderStickies() {
-  const list = $('#stickyList'); if (!stickies.length) { list.innerHTML = '<div class="empty">还没有便签～ 写点什么吧 📌</div>'; return; }
-  list.innerHTML = stickies.slice().sort((a, b) => b.ts - a.ts).map(s => `<div class="sticky-item" style="border-radius:14px;padding:13px 14px;margin-bottom:10px;background:rgba(255,230,120,.2);border:1px solid rgba(220,180,60,.35);"><div class="sticky-text">${escHtml(s.text)}</div><div class="sticky-meta">${fmtDateTime(s.ts)}</div><div class="sticky-ops"><button class="ghost mini" data-act="edit-sticky" data-id="${s.id}">编辑</button><button class="ghost mini danger" data-act="del-sticky" data-id="${s.id}">删除</button></div></div>`).join('');
-}
-$('#stickyList').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-act]'); if (!btn) return; const id = btn.dataset.id; const s = stickies.find(x => x.id === id); if (!s) return;
-  if (btn.dataset.act === 'del-sticky') { if (!confirm('确定删除这条便签吗？')) return; stickies = stickies.filter(x => x.id !== id); saveStickies(); renderStickies(); toast('便签已删除'); }
-  if (btn.dataset.act === 'edit-sticky') {
-    openModal(`<h3>编辑便签</h3><textarea id="eStickyText" style="min-height:100px">${escHtml(s.text)}</textarea><div class="modal-actions"><button class="ghost" id="esCancel">取消</button><button class="primary" id="esSave">保存</button></div>`, (box, close) => {
-      box.querySelector('#esCancel').onclick = close;
-      box.querySelector('#esSave').onclick = () => { const txt = box.querySelector('#eStickyText').value.trim(); if (!txt) return toast('内容不能为空'); s.text = txt; s.ts = Date.now(); saveStickies(); renderStickies(); close(); toast('便签已更新'); };
-    });
-  }
-});
-function addSticky() {
-  const ta = $('#stickyInput'); const text = ta.value.trim(); if (!text) { toast('写点内容再添加吧～'); return; }
-  stickies.push({ id: uid(), text, ts: Date.now() }); saveStickies(); ta.value = ''; renderStickies(); toast('便签已添加 📌');
-}
-
 function applyTheme(dark) { document.body.classList.toggle('dark', dark); $('#themeIcon').textContent = dark ? '☀️' : '🌙'; store.set(K_THEME, dark); }
 function switchMode(mode) {
   if (!['time', 'pomo', 'sched', 'exam'].includes(mode)) mode = 'time';
@@ -1172,15 +1123,13 @@ function bindEvents() {
   $('#btnTheme').addEventListener('click', () => applyTheme(!document.body.classList.contains('dark')));
   $('#btnFullscreen').addEventListener('click', toggleFullscreen);
   $('#btnFlipMode').addEventListener('click', toggleFlipClock); $('#flipCloseBtn').addEventListener('click', toggleFlipClock);
-  $('#btnSticky').addEventListener('click', () => { $('#drawer').classList.add('open'); renderStickies(); $('#drawer').style.transform = 'translateX(0)'; });
-  $('#btnCloseDrawer').addEventListener('click', () => $('#drawer').style.transform = 'translateX(102%)');
-  $('#btnAddSticky').addEventListener('click', addSticky);
-  $('#stickyInput').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addSticky(); } });
+  
   $('#segCountdown').addEventListener('click', () => setTimerMode('countdown'));
   $('#segCountup').addEventListener('click', () => setTimerMode('countup'));
   $('#btnStartPause').addEventListener('click', toggleTimer); $('#btnReset').addEventListener('click', resetTimer); $('#btnFinish').addEventListener('click', handleFinish);
   $('#btnApplySet').addEventListener('click', applyMinutes); $('#setMinutes').addEventListener('keydown', e => { if (e.key === 'Enter') applyMinutes(); });
   $('#weekSelect').addEventListener('change', renderRecords); $('#btnExportCSV').addEventListener('click', exportCSV);
+  
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space') return; if (document.body.dataset.mode !== 'pomo') return;
     const tag = (e.target.tagName || '').toLowerCase(); if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
@@ -1196,7 +1145,7 @@ function init() {
   loadTimer(); updateStartBtn(); tickTimer();
   const mins = Math.round(timer.totalMs / 60000); const setEl = $('#setMinutes'); if (setEl) setEl.value = mins > 0 ? mins : 25;
   setTimerMode(timer.mode);
-  tickClock(); renderRecords(); drawPie(); renderSched(); renderExamTable(); renderStickies();
+  tickClock(); renderRecords(); drawPie(); renderSched(); renderExamTable();
   switchMode(store.get(K_MODE, 'time'));
   bindEvents();
   setInterval(tickClock, 1000); setInterval(tickTimer, 100);
