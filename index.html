@@ -120,12 +120,24 @@ button{font-family:inherit;}
 .mini{padding:7px 13px;font-size:12.5px;border-radius:9px;min-height:36px;}
 .big{padding:14px 34px;font-size:15px;}
 
-input[type=number],input[type=text],select,textarea{
+input[type=number],input[type=text],input[type=date],input[type=time],select,textarea{
   background:rgba(255,255,255,.66);border:1px solid var(--card-border);color:var(--text);border-radius:11px;padding:11px 13px;
   font-size:16px;font-family:inherit;outline:none;transition:.22s;width:100%;min-height:44px;
 }
-body.dark input[type=number],body.dark input[type=text],body.dark select,body.dark textarea{background:rgba(255,255,255,.06);}
+body.dark input[type=number],body.dark input[type=text],body.dark input[type=date],body.dark input[type=time],body.dark select,body.dark textarea{background:rgba(255,255,255,.06);}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(80,140,255,.16);}
+
+/* ============ 补充缺失样式 ============ */
+.muted{color:var(--muted);font-size:13px;}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--muted);}
+.field > span{font-size:12.5px;}
+
+.legend-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:13px;transition:background .2s;}
+.legend-item:hover{background:rgba(130,150,190,.1);}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.legend-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--text);}
+.legend-val{color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap;}
 
 /* ============ 表格 ============ */
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -286,8 +298,10 @@ td.op-cell button:last-child{margin-right:0;}
   <!-- ===== 时间模式 ===== -->
   <section id="view-time" class="view active">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 170px);">
-      <div style="margin-bottom:20px;">
+      <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
         <button id="btnFlipMode" class="ghost">🕒 切换翻页时钟</button>
+        <button id="btnBackup" class="ghost">💾 导出数据</button>
+        <button id="btnRestore" class="ghost" style="position:relative;">📥 导入数据<input type="file" id="restoreInput" accept=".json" style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer;"></button>
       </div>
       <div id="bigClock" style="display:flex;align-items:baseline;justify-content:center;font-size:clamp(58px,15vh,180px);font-weight:800;line-height:1;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;">
         <span id="clockHM">00:00</span><span id="clockS" style="font-size:.28em;opacity:.55;margin-left:.14em;">00</span>
@@ -345,7 +359,8 @@ td.op-cell button:last-child{margin-right:0;}
       <div class="card-head">
         <h3>📅 日程计划表</h3>
         <div class="head-tools">
-          <button id="btnAddSchedRow" class="ghost mini">+ 添加行</button>
+          <button id="btnAddSched" class="primary mini">📝 添加日程</button>
+          <button id="btnAddSchedRow" class="ghost mini">+ 添加空行</button>
           <button id="btnAddSchedCol" class="ghost mini">+ 添加日期列</button>
           <button id="btnClearSched" class="ghost mini danger">清空重置</button>
         </div>
@@ -436,7 +451,7 @@ td.op-cell button:last-child{margin-right:0;}
 
 <script>
 /* =====================================================================
-   0. 通用工具
+   0. 通用工具 & 数据备份
    ===================================================================== */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -447,7 +462,8 @@ const escAttr = escHtml;
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { console.error('存储失败', e); } }
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { console.error('存储失败', e); toast('存储空间不足，建议导出备份或清理'); } },
+  remove(k) { try { localStorage.removeItem(k); } catch (e) { console.error('删除失败', e); } }
 };
 
 const K_REC = 'tt_records_v1', K_TIMER = 'tt_timer_v1', K_THEME = 'tt_theme_v1', K_MODE = 'tt_mode_v1', K_LASTPJ = 'tt_last_project', K_SCHED = 'tt_sched_v1', K_EXAM = 'tt_exam_v1';
@@ -468,6 +484,46 @@ function fmtDateTime(ts) {
 }
 function dateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 function getWeekKey(ts) { const d = new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return dateStr(d); }
+
+/* 从 CSS 变量读取计算后的颜色，给 canvas 使用 */
+function cssColor(name, fallback) {
+  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+/* 导出与导入 */
+$('#btnBackup').addEventListener('click', () => {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('tt_')) {
+      data[key] = localStorage.getItem(key);
+    }
+  }
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `番茄钟备份_${dateStr(new Date())}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('备份文件已下载，请妥善保存');
+});
+
+$('#restoreInput').addEventListener('change', function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (confirm('确定导入吗？当前设备的所有数据将被覆盖！')) {
+        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
+        location.reload();
+      }
+    } catch (err) { toast('导入失败，文件格式不正确'); }
+  };
+  reader.readAsText(file); this.value = '';
+});
 
 /* =====================================================================
    1. 背景漂浮图 & 音频
@@ -560,6 +616,10 @@ function loadTimer() {
     timer.mode = s.mode === 'countup' ? 'countup' : 'countdown'; timer.totalMs = Number(s.totalMs) || 25 * 60 * 1000;
     timer.elapsedBase = Number(s.elapsedBase) || 0; timer.running = !!s.running; timer.runStart = s.runStart || null;
     if (timer.running && !timer.runStart) timer.runStart = Date.now();
+    // 跨夜/超时守卫：如果运行时超过 6 小时，多半是隔夜或忘记关，直接重置
+    if (timer.running && timer.runStart && (Date.now() - timer.runStart) > 6 * 3600 * 1000) {
+      timer.running = false; timer.runStart = null; timer.elapsedBase = 0;
+    }
   }
 }
 function saveTimer() { store.set(K_TIMER, { mode: timer.mode, totalMs: timer.totalMs, elapsedBase: timer.elapsedBase, runStart: timer.runStart, running: timer.running }); }
@@ -701,8 +761,8 @@ function drawPie() {
       const a1 = a0 + (d.ms / total) * Math.PI * 2; ctx.beginPath(); ctx.arc(cx, cy, rOut, a0, a1); ctx.arc(cx, cy, rIn, a1, a0, true); ctx.closePath(); ctx.fillStyle = PALETTE[i % PALETTE.length]; ctx.fill(); a0 = a1;
     });
   }
-  ctx.fillStyle = 'rgba(120,140,170,.95)'; ctx.font = '700 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('近 7 天', cx, cy - 13);
-  ctx.fillStyle = '#3b6ea8'; ctx.font = '800 17px sans-serif'; ctx.fillText(fmtMS(total), cx, cy + 11);
+  ctx.fillStyle = cssColor('--muted', '#6d7b8e'); ctx.font = '700 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('近 7 天', cx, cy - 13);
+  ctx.fillStyle = cssColor('--text', '#1b2432'); ctx.font = '800 17px sans-serif'; ctx.fillText(fmtMS(total), cx, cy + 11);
   legend.innerHTML = data.map((d, i) => { const pct = (d.ms / total * 100).toFixed(1); return `<div class="legend-item"><span class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></span><span class="legend-name" title="${escAttr(d.name)}">${escHtml(d.name)}</span><span class="legend-val">${pct}% · ${fmtMS(d.ms)}</span></div>`; }).join('');
 }
 
@@ -721,7 +781,21 @@ if (!schedData || !schedData.cols || !schedData.rows) {
   };
   store.set(K_SCHED, schedData);
 }
-function saveSched() { store.set(K_SCHED, schedData); }
+
+/* 带存储上限防护的保存 */
+function saveSched() {
+  try {
+    const str = JSON.stringify(schedData);
+    if (str.length > 4.2 * 1024 * 1024) {
+      toast('数据接近存储上限，请清理部分照片后重试');
+      return;
+    }
+    localStorage.setItem(K_SCHED, str);
+  } catch (e) {
+    console.error('保存日程失败', e);
+    toast('存储已满，保存失败');
+  }
+}
 
 function renderSched() {
   const head = $('#schedHead'); const body = $('#schedBody');
@@ -764,10 +838,91 @@ $('#schedBody').addEventListener('click', e => {
 });
 $('#btnAddSchedRow').addEventListener('click', () => { const newRow = { id: uid(), cells: {} }; schedData.rows.push(newRow); saveSched(); renderSched(); });
 $('#btnAddSchedCol').addEventListener('click', () => {
-  const now = new Date(); const defaultName = `${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`; const colDate = dateStr(now);
-  const newCol = { id: 'col_' + Date.now(), name: defaultName, date: colDate, fixed: false }; schedData.cols.push(newCol); saveSched(); renderSched(); updateCalendarDots();
+  const now = new Date(); const colDate = dateStr(now);
+  if (schedData.cols.some(c => c.date === colDate)) { toast('今天已有一列了'); return; }
+  const defaultName = `${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+  const newCol = { id: 'col_' + colDate, name: defaultName, date: colDate, fixed: false };
+  schedData.cols.push(newCol); saveSched(); renderSched(); updateCalendarDots();
 });
-$('#btnClearSched').addEventListener('click', () => { if (!confirm('确定要清空整个表格并重置吗？')) return; store.removeItem(K_SCHED); location.reload(); });
+$('#btnClearSched').addEventListener('click', () => {
+  if (!confirm('确定要清空整个表格并重置吗？')) return;
+  store.remove(K_SCHED);
+  location.reload();
+});
+
+/* --- 新增：录入日程弹窗 → 自动汇总到日程表 --- */
+function openAddSchedModal() {
+  const today = dateStr(new Date());
+  const nowTime = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
+  openModal(`
+    <h3>📝 添加日程</h3>
+    <p class="muted" style="margin-top:-4px;">填写完成后会自动汇总到日程计划表对应日期列中。</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
+      <label class="field"><span>日期</span><input type="date" id="sdDate" value="${today}"></label>
+      <label class="field"><span>时间</span><input type="time" id="sdTime" value="${nowTime}"></label>
+    </div>
+    <label class="field"><span>项目（简短主题）</span><input type="text" id="sdProject" placeholder="例如：行测 / 英语 / 晨读"></label>
+    <label class="field"><span>内容（详细安排）</span><input type="text" id="sdContent" placeholder="例如：资料分析 30 题 / 精听 BBC"></label>
+    <div class="radio-row" style="margin-top:4px;">
+      <label class="radio-chip" style="font-weight:600;"><input type="checkbox" id="sdMulti">连续添加（保存后不关闭）</label>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="sdCancel">取消</button>
+      <button class="primary" id="sdSave">保存到日程表</button>
+    </div>
+  `, (box, close) => {
+    const projectEl = box.querySelector('#sdProject');
+    setTimeout(() => projectEl.focus(), 80);
+    box.querySelector('#sdCancel').onclick = close;
+    box.querySelector('#sdSave').onclick = () => {
+      const date = box.querySelector('#sdDate').value;
+      const time = box.querySelector('#sdTime').value;
+      const project = projectEl.value.trim();
+      const content = box.querySelector('#sdContent').value.trim();
+      const multi = box.querySelector('#sdMulti').checked;
+      if (!date) { toast('请选择日期'); return; }
+      if (!time) { toast('请选择时间'); return; }
+      if (!project && !content) { toast('项目或内容至少填一项'); return; }
+
+      // 1. 找到或创建日期列
+      let dateCol = schedData.cols.find(c => c.date === date);
+      if (!dateCol) {
+        const parts = date.split('-');
+        dateCol = { id: 'col_' + date, name: `${parts[1]}-${parts[2]}`, date: date, fixed: false };
+        schedData.cols.push(dateCol);
+        // 日期列按日期排序，固定列保持原位
+        const fixedCols = schedData.cols.filter(c => !c.date);
+        const dateCols = schedData.cols.filter(c => c.date).sort((a, b) => a.date.localeCompare(b.date));
+        schedData.cols = [...fixedCols, ...dateCols];
+      }
+
+      // 2. 生成新行
+      const newRow = { id: uid(), cells: {} };
+      newRow.cells['c1'] = time;
+      newRow.cells['c2'] = project;
+      newRow.cells['c3'] = content;
+      newRow.cells[dateCol.id] = 0;
+      schedData.rows.push(newRow);
+
+      // 3. 保存并渲染
+      clearTimeout(schedSaveTimer);
+      saveSched();
+      renderSched();
+      updateCalendarDots();
+
+      toast(`已添加到 ${date} 的日程 ✨`);
+      if (multi) {
+        // 连续添加：保留日期/时间，清空项目和内容，继续录入
+        projectEl.value = '';
+        box.querySelector('#sdContent').value = '';
+        setTimeout(() => projectEl.focus(), 40);
+      } else {
+        close();
+      }
+    };
+  });
+}
+$('#btnAddSched').addEventListener('click', openAddSchedModal);
 
 /* --- 月历视图（放在抽屉里） --- */
 let currentCalYear = new Date().getFullYear(); let currentCalMonth = new Date().getMonth();
@@ -799,11 +954,11 @@ function updateCalendarDots() {
   });
 }
 $('#btnSticky').addEventListener('click', () => {
-  $('#drawer').classList.add('open'); $('#drawer').style.transform = 'translateX(0)';
+  $('#drawer').classList.add('open');
   renderCalendar();
 });
 $('#btnCloseDrawer').addEventListener('click', () => {
-  $('#drawer').classList.remove('open'); $('#drawer').style.transform = 'translateX(102%)';
+  $('#drawer').classList.remove('open');
 });
 $('#calPrevBtn').addEventListener('click', () => { currentCalMonth--; if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; } renderCalendar(); });
 $('#calNextBtn').addEventListener('click', () => { currentCalMonth++; if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; } renderCalendar(); });
@@ -820,7 +975,8 @@ function openDailyPlan(date) {
   const listDiv = $('#dailyPlanList');
   if (!dateCol) { listDiv.innerHTML = '<div class="empty">当日暂无计划，请点击下方添加任务。</div>'; }
   else {
-    const tasks = schedData.rows.filter(r => r.cells[dateCol.id] !== undefined || r.cells.c2);
+    // 只显示在该日期列中有勾选状态的行（不含"永久项目"）
+    const tasks = schedData.rows.filter(r => r.cells[dateCol.id] !== undefined);
     if (!tasks.length) listDiv.innerHTML = '<div class="empty">当日暂无计划。</div>';
     else {
       listDiv.innerHTML = tasks.map((row, idx) => {
@@ -845,8 +1001,18 @@ function openDailyPlan(date) {
 $('#btnCloseDaily').addEventListener('click', () => $('#dailyPlanOverlay').classList.remove('active'));
 $('#btnAddDailyTask').addEventListener('click', () => {
   let dateCol = schedData.cols.find(c => c.date === currentDailyDate);
-  if (!dateCol) { dateCol = { id: 'col_' + Date.now(), name: currentDailyDate.slice(5), date: currentDailyDate, fixed: false }; schedData.cols.push(dateCol); }
-  const newRow = { id: uid(), cells: { [dateCol.id]: 0 } }; schedData.rows.push(newRow); saveSched(); renderSched(); openDailyPlan(currentDailyDate);
+  if (!dateCol) {
+    const parts = currentDailyDate.split('-');
+    dateCol = { id: 'col_' + currentDailyDate, name: `${parts[1]}-${parts[2]}`, date: currentDailyDate, fixed: false };
+    schedData.cols.push(dateCol);
+    const fixedCols = schedData.cols.filter(c => !c.date);
+    const dateCols = schedData.cols.filter(c => c.date).sort((a, b) => a.date.localeCompare(b.date));
+    schedData.cols = [...fixedCols, ...dateCols];
+  }
+  const newRow = { id: uid(), cells: { [dateCol.id]: 0 } };
+  schedData.rows.push(newRow);
+  saveSched(); renderSched(); updateCalendarDots();
+  openDailyPlan(currentDailyDate);
 });
 
 let currentPhotoRowId = null;
@@ -861,7 +1027,7 @@ $('#photoInput').addEventListener('change', function(e) {
       const MAX_WIDTH = 600; let width = img.width, height = img.height;
       if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
       canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
       const row = schedData.rows.find(r => r.id === currentPhotoRowId);
       if (row) { row.cells[`photo_${currentDailyDate}`] = dataUrl; saveSched(); openDailyPlan(currentDailyDate); toast('拍照打卡成功 📸'); }
     };
@@ -876,14 +1042,7 @@ $('#photoInput').addEventListener('change', function(e) {
 const MODULES = ['政治理论', '常识判断', '言语理解', '数量关系', '推理判断', '资料分析'];
 const MODULE_KEYS = ['t1', 't2', 't3', 't4', 't5', 't6'];
 let examData = store.get(K_EXAM, []);
-// 兼容老数据结构
-if (examData.length && examData[0].t1_s !== undefined && examData[0].t1_t === undefined) {
-  examData.forEach(r => {
-    MODULE_KEYS.forEach(k => {
-      r[k + '_t'] = (parseFloat(r[k + '_w']) || 0) + (parseFloat(r[k + '_s']) || 0);
-    });
-  });
-}
+let _lastAnalysisIds = null;
 function saveExam() { store.set(K_EXAM, examData); }
 
 function renderExamTable() {
@@ -925,7 +1084,7 @@ window.delExam = function(id) {
 window.openExamModal = function(id) {
   const isEdit = !!id;
   const row = isEdit ? examData.find(r => r.id === id) : { id: uid(), year: new Date().getFullYear().toString(), paper: '', total: '', t1_w:'', t1_t:'', t2_w:'', t2_t:'', t3_w:'', t3_t:'', t4_w:'', t4_t:'', t5_w:'', t5_t:'', t6_w:'', t6_t:'' };
-  
+
   openModal(`
     <h3>${isEdit ? '✏️ 修改成绩' : '➕ 录入成绩'}</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
@@ -933,7 +1092,7 @@ window.openExamModal = function(id) {
       <label class="field" style="grid-column: span 2;"><span>试卷名称</span><input type="text" id="ePaper" value="${escAttr(row.paper)}" placeholder="国考/省考/模拟卷"></label>
     </div>
     <label class="field" style="margin-bottom:15px;"><span>试卷总分</span><input type="number" id="eTotal" value="${escAttr(row.total)}" placeholder="例如 75"></label>
-    
+
     <div style="margin-top:15px; border-top:1px dashed var(--card-border); padding-top:15px;">
       <p class="muted" style="margin-bottom:10px;">请输入每个模块的错题数和总题数，系统自动计算正确率：</p>
       ${MODULES.map((m, i) => {
@@ -955,7 +1114,7 @@ window.openExamModal = function(id) {
       const year = box.querySelector('#eYear').value.trim() || '2024';
       const paper = box.querySelector('#ePaper').value.trim() || '未命名试卷';
       const total = parseFloat(box.querySelector('#eTotal').value) || 0;
-      
+
       const newRow = { id: row.id, year, paper, total };
       MODULES.forEach((m, i) => {
         const w = parseFloat(box.querySelector(`#eW_${i+1}`).value) || 0;
@@ -963,7 +1122,7 @@ window.openExamModal = function(id) {
         newRow[`t${i+1}_w`] = w;
         newRow[`t${i+1}_t`] = t;
       });
-      
+
       if (isEdit) {
         const idx = examData.findIndex(r => r.id === id);
         examData[idx] = newRow;
@@ -976,7 +1135,7 @@ window.openExamModal = function(id) {
 };
 
 $('#btnAddExamRow').addEventListener('click', () => openExamModal(null));
-$('#btnClearExam').addEventListener('click', () => { if (!confirm('确定清空所有成绩记录吗？')) return; examData = []; saveExam(); renderExamTable(); $('#examAnalysisPanel').style.display = 'none'; });
+$('#btnClearExam').addEventListener('click', () => { if (!confirm('确定清空所有成绩记录吗？')) return; examData = []; saveExam(); renderExamTable(); $('#examAnalysisPanel').style.display = 'none'; _lastAnalysisIds = null; });
 
 /* --- 数据分析 --- */
 $('#btnAnalyzeExam').addEventListener('click', () => {
@@ -999,17 +1158,18 @@ $('#btnAnalyzeExam').addEventListener('click', () => {
 });
 
 function runAnalysis(ids) {
+  _lastAnalysisIds = ids.slice();
   const selected = examData.filter(r => ids.includes(r.id)).sort((a,b) => a.year.localeCompare(b.year) || a.paper.localeCompare(b.paper));
   const panel = $('#examAnalysisPanel'); panel.style.display = 'block';
-  
+
   const labels = selected.map(r => `${r.year} ${r.paper.slice(0,4)}`);
   const scores = selected.map(r => parseFloat(r.total) || 0);
-  
+
   drawExamChart(labels, scores);
-  
+
   let weakModule = ''; let minRate = 1;
   let textHtml = `<p>本次分析了 <b>${selected.length}</b> 套试卷。</p>`;
-  
+
   const moduleStats = MODULE_KEYS.map((k, i) => {
     let totalQ = 0; let totalW = 0;
     selected.forEach(r => { totalQ += (parseFloat(r[k + '_t']) || 0); totalW += (parseFloat(r[k + '_w']) || 0); });
@@ -1054,46 +1214,54 @@ function drawExamChart(labels, scores) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const rect = cv.parentElement.getBoundingClientRect();
   cv.width = rect.width * dpr; cv.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const W = rect.width, H = rect.height;
   ctx.clearRect(0, 0, W, H);
-  
+
   if (!scores.length) return;
-  
+
+  // 用计算后的颜色，修复深色主题下图线消失的问题
+  const C = {
+    muted: cssColor('--muted', '#6d7b8e'),
+    accent: cssColor('--accent', '#8b5cf6'),
+    text: cssColor('--text', '#1b2432'),
+    card: cssColor('--card-solid', '#ffffff')
+  };
+
   const padding = { top: 20, right: 20, bottom: 40, left: 40 };
   const chartW = W - padding.left - padding.right;
   const chartH = H - padding.top - padding.bottom;
-  
+
   const maxScore = Math.max(...scores, 100);
   const yScale = chartH / maxScore;
-  
+
   ctx.strokeStyle = 'rgba(130,150,190,.2)'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = padding.top + chartH - (i * chartH / 4);
     ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(W - padding.right, y); ctx.stroke();
-    ctx.fillStyle = 'var(--muted)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = C.muted; ctx.font = '12px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     ctx.fillText(Math.round(i * maxScore / 4), padding.left - 8, y);
   }
-  
+
   const stepX = chartW / Math.max(1, scores.length - 1);
   const points = scores.map((s, i) => ({ x: padding.left + i * stepX, y: padding.top + chartH - s * yScale }));
-  
-  ctx.beginPath(); ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+
+  ctx.beginPath(); ctx.strokeStyle = C.accent; ctx.lineWidth = 3; ctx.lineJoin = 'round';
   points.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
   ctx.stroke();
-  
+
   ctx.lineTo(points[points.length-1].x, padding.top + chartH);
   ctx.lineTo(points[0].x, padding.top + chartH);
   ctx.closePath();
   const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
   grad.addColorStop(0, 'rgba(139,92,246,0.3)'); grad.addColorStop(1, 'rgba(139,92,246,0.01)');
   ctx.fillStyle = grad; ctx.fill();
-  
+
   points.forEach((p, i) => {
-    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fillStyle = 'var(--card-solid)'; ctx.fill(); ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = 'var(--muted)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fillStyle = C.card; ctx.fill(); ctx.strokeStyle = C.accent; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillText(labels[i], p.x, padding.top + chartH + 10);
-    ctx.fillStyle = 'var(--text)'; ctx.font = 'bold 12px sans-serif'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = C.text; ctx.font = 'bold 12px sans-serif'; ctx.textBaseline = 'bottom';
     ctx.fillText(scores[i], p.x, p.y - 8);
   });
 }
@@ -1101,7 +1269,16 @@ function drawExamChart(labels, scores) {
 /* =====================================================================
    8. 全局初始化 & 绑定
    ===================================================================== */
-function applyTheme(dark) { document.body.classList.toggle('dark', dark); $('#themeIcon').textContent = dark ? '☀️' : '🌙'; store.set(K_THEME, dark); }
+function applyTheme(dark) {
+  document.body.classList.toggle('dark', dark);
+  $('#themeIcon').textContent = dark ? '☀️' : '🌙';
+  store.set(K_THEME, dark);
+  // 重绘 canvas 图表（颜色变了）
+  if (document.body.dataset.mode === 'pomo') drawPie();
+  if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
+    requestAnimationFrame(() => runAnalysis(_lastAnalysisIds));
+  }
+}
 function switchMode(mode) {
   if (!['time', 'pomo', 'sched', 'exam'].includes(mode)) mode = 'time';
   document.body.dataset.mode = mode;
@@ -1123,13 +1300,13 @@ function bindEvents() {
   $('#btnTheme').addEventListener('click', () => applyTheme(!document.body.classList.contains('dark')));
   $('#btnFullscreen').addEventListener('click', toggleFullscreen);
   $('#btnFlipMode').addEventListener('click', toggleFlipClock); $('#flipCloseBtn').addEventListener('click', toggleFlipClock);
-  
+
   $('#segCountdown').addEventListener('click', () => setTimerMode('countdown'));
   $('#segCountup').addEventListener('click', () => setTimerMode('countup'));
   $('#btnStartPause').addEventListener('click', toggleTimer); $('#btnReset').addEventListener('click', resetTimer); $('#btnFinish').addEventListener('click', handleFinish);
   $('#btnApplySet').addEventListener('click', applyMinutes); $('#setMinutes').addEventListener('keydown', e => { if (e.key === 'Enter') applyMinutes(); });
   $('#weekSelect').addEventListener('change', renderRecords); $('#btnExportCSV').addEventListener('click', exportCSV);
-  
+
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space') return; if (document.body.dataset.mode !== 'pomo') return;
     const tag = (e.target.tagName || '').toLowerCase(); if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
@@ -1137,7 +1314,24 @@ function bindEvents() {
     e.preventDefault(); toggleTimer();
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { tickClock(); tickTimer(); if (document.body.dataset.mode === 'pomo') drawPie(); } });
-  window.addEventListener('resize', () => { if (document.body.dataset.mode === 'pomo') drawPie(); });
+  window.addEventListener('resize', () => {
+    if (document.body.dataset.mode === 'pomo') drawPie();
+    if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
+      // 重绘图表（尺寸变了）
+      const cv = $('#examChart'); if (cv) {
+        const r = cv.parentElement.getBoundingClientRect();
+        if (r.width > 0) runAnalysis(_lastAnalysisIds);
+      }
+    }
+  });
+  // 关页面前清掉防抖保存一次，避免最后一次输入丢失
+  window.addEventListener('beforeunload', () => {
+    clearTimeout(schedSaveTimer);
+    try {
+      const str = JSON.stringify(schedData);
+      if (str.length <= 4.2 * 1024 * 1024) localStorage.setItem(K_SCHED, str);
+    } catch (e) { console.error(e); }
+  });
 }
 
 function init() {
