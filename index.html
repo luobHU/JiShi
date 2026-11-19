@@ -129,10 +129,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 
 /* ============ 补充缺失样式 ============ */
 .muted{color:var(--muted);font-size:13px;}
-
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--muted);}
 .field > span{font-size:12.5px;}
-
 .legend-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:13px;transition:background .2s;}
 .legend-item:hover{background:rgba(130,150,190,.1);}
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
@@ -169,7 +167,6 @@ td.op-cell button:last-child{margin-right:0;}
 #schedTable input {border: none;background: transparent;text-align: center;outline: none;min-height: auto;padding: 4px;color: var(--text);}
 #schedTable input:focus {background: rgba(130,150,190,.15);border-radius: 6px;}
 
-/* 时间单元格：输入框 + 右侧快捷选择按钮 */
 #schedTable td.time-cell-td {position: relative;padding-right: 30px;}
 #schedTable td.time-cell-td input {font-size: 13px;padding-right: 22px;}
 .time-pick-btn {
@@ -197,7 +194,7 @@ td.op-cell button:last-child{margin-right:0;}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--card-border);padding-top:calc(18px + env(safe-area-inset-top));}
 .drawer-head h3{margin:0;font-size:16px;}
 .drawer-body{padding:20px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
-.cal-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 20px;font-size: 18px;font-weight: 700;}
+.cal-header {display: flex;justify-content: space-between; align-items: center;margin-bottom: 20px;font-size: 18px;font-weight: 700;}
 .cal-header button {background: none;border: none;font-size: 24px;cursor: pointer;color: var(--text);padding: 0 10px;}
 .cal-grid {display: grid;grid-template-columns: repeat(7, 1fr);gap: 6px;text-align: center;}
 .cal-weekday {font-size: 12px;color: var(--muted);font-weight: 700;margin-bottom: 5px;}
@@ -250,16 +247,61 @@ td.op-cell button:last-child{margin-right:0;}
 .radio-chip{display:flex;align-items:center;gap:7px;padding:11px 16px;border-radius:11px;border:1px solid var(--card-border);cursor:pointer;font-size:14px;font-weight:600;}
 .radio-chip input{accent-color:var(--accent);width:18px;height:18px;}
 
-/* ============ Toast / 闪烁 ============ */
+/* ============ 配色选择器 ============ */
+.theme-picker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; max-height: 40vh; overflow-y: auto; padding-right: 5px; }
+.theme-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 10px; cursor: pointer; transition: all .2s; background: var(--card-solid); position: relative; }
+.theme-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.theme-card.active { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 2px rgba(80,140,255,.2); }
+.theme-colors { display: flex; gap: 4px; margin-bottom: 8px; height: 30px; border-radius: 6px; overflow: hidden; }
+.theme-colors div { flex: 1; }
+.theme-name { font-size: 13px; font-weight: 700; text-align: center; color: var(--text); }
+.custom-theme-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px dashed var(--card-border); }
+.color-field { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); background: rgba(130,150,190,.08); padding: 6px 10px; border-radius: 8px; }
+.color-field input[type="color"] { width: 32px; height: 32px; padding: 0; border: none; background: none; cursor: pointer; outline: none; }
+
+/* ============ 番茄钟全屏 (含翻页) ============ */
+#pomoFlipOverlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.65);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--text); font-family: sans-serif;
+}
+#pomoFlipOverlay.active { display: flex; }
+.pomo-flip-wrap { display: flex; gap: min(2vw,2vh); align-items: center; justify-content: center; margin-top: -10vh; }
+.pomo-flip-group { display: flex; gap: min(1.5vw,1.5vh); }
+.pomo-flip-card {
+  position: relative; width: calc(min(20vw, 30vh) * 0.72); height: min(20vw, 30vh);
+  background: var(--card-solid); border-radius: min(2vw,2vh);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15), inset 0 0 0 1px var(--card-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: calc(min(20vw, 30vh) * 0.8); font-weight: 800; color: var(--accent);
+  perspective: 400px;
+}
+.pomo-flip-card::after { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: var(--card-border); z-index: 2; opacity: .5; }
+.pomo-flip-colon { font-size: calc(min(20vw, 30vh) * 0.6); font-weight: 800; color: var(--accent); margin: 0 min(1vw,1vh); opacity: 0.8; }
+.pomo-flip-task { margin-top: 5vh; font-size: clamp(16px, 3vh, 24px); color: var(--text); opacity: .7; font-weight: 500; letter-spacing: 2px; }
+.pomo-flip-ctrl { position: absolute; bottom: 8vh; display: flex; gap: 15px; }
+.pomo-flip-ctrl button {
+  background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text);
+  padding: 14px 36px; border-radius: 30px; font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: .2s; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.pomo-flip-ctrl button:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.05); }
+.pomo-flip-ctrl button:active { transform: scale(.95); }
+.pomo-flip-anim { animation: flipDown 0.6s ease-in; }
+
+/* ============ Toast / 闪烁 / 原翻页时钟 ============ */
 #toast{position:fixed;left:50%;bottom:42px;transform:translate(-50%,26px);background:rgba(20,32,50,.92);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.3s;z-index:2000;white-space:nowrap;}
 #toast.show{opacity:1;transform:translate(-50%,0);}
 #flashOverlay{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(120,210,255,.55),rgba(120,210,255,.04) 72%);}
 #flashOverlay.on{animation:breathe 1s ease-in-out 5;}
 @keyframes breathe{0%,100%{opacity:0;}50%{opacity:1;}}
 
-/* ============ 其他 ============ */
 .shake{animation:shake .5s;border-color:#ef4444 !important;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
 #flipClockOverlay{position:fixed;inset:0;z-index:999;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;}
 #flipClockOverlay.active{display:flex;}
 .flip-wrap{display:flex;gap:min(2vw,2vh);align-items:center;justify-content:center;margin-top:-5vh;}
@@ -288,8 +330,10 @@ td.op-cell button:last-child{margin-right:0;}
   #schedTable th:nth-child(1), #schedTable td:nth-child(1) {min-width: 100px;}
   #schedTable th:nth-child(2), #schedTable td:nth-child(2) {left: 100px;min-width: 80px;}
   #schedTable th:nth-child(3), #schedTable td:nth-child(3) {left: 180px;min-width: 110px;}
+  .theme-picker-grid { grid-template-columns: 1fr; }
 }
 </style>
+<style id="custom-theme-style"></style>
 </head>
 <body data-mode="time">
 
@@ -304,6 +348,7 @@ td.op-cell button:last-child{margin-right:0;}
     <button data-mode="exam">📊 行测</button>
   </nav>
   <div class="top-right">
+    <button class="icon-btn" id="btnThemePreset"><span>🎨</span><span class="lbl">配色</span></button>
     <button class="icon-btn" id="btnFullscreen"><span>⛶</span><span class="lbl">全屏</span></button>
     <button class="icon-btn" id="btnSticky"><span>📅</span><span class="lbl">月历</span></button>
     <button class="icon-btn" id="btnTheme"><span id="themeIcon">🌙</span><span class="lbl">夜间</span></button>
@@ -343,6 +388,7 @@ td.op-cell button:last-child{margin-right:0;}
         <button id="btnStartPause" class="primary big">开始</button>
         <button id="btnReset" class="ghost">重置</button>
         <button id="btnFinish" class="ghost">结束并记录</button>
+        <button id="btnPomoFullscreen" class="ghost" style="color:var(--accent);border-color:var(--accent);">⛶ 全屏专注</button>
       </div>
       <div style="height:6px;border-radius:99px;background:rgba(130,150,190,.18);margin-top:22px;overflow:hidden;"><div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));"></div></div>
     </div>
@@ -454,6 +500,7 @@ td.op-cell button:last-child{margin-right:0;}
 <!-- 隐藏的图片上传控件 -->
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
 
+<!-- 原版翻页时钟（当前时间） -->
 <div id="flipClockOverlay">
   <div class="flip-wrap">
     <div class="flip-group" id="flipH"></div><div class="flip-colon">:</div>
@@ -462,6 +509,21 @@ td.op-cell button:last-child{margin-right:0;}
   </div>
   <div id="flipDate"></div>
   <button id="flipCloseBtn">退出全屏时钟</button>
+</div>
+
+<!-- 番茄钟专属全屏翻页 -->
+<div id="pomoFlipOverlay">
+  <div class="pomo-flip-wrap">
+    <div class="pomo-flip-group" id="pomoFlipM"></div>
+    <div class="pomo-flip-colon">:</div>
+    <div class="pomo-flip-group" id="pomoFlipS"></div>
+  </div>
+  <div class="pomo-flip-task" id="pomoFlipTask">保持专注，享受当下</div>
+  <div class="pomo-flip-ctrl">
+    <button id="pomoFlipToggle">暂停</button>
+    <button id="pomoFlipReset">重置</button>
+    <button id="pomoFlipClose">退出全屏</button>
+  </div>
 </div>
 
 <div id="modalRoot"></div>
@@ -483,7 +545,7 @@ const store = {
   remove(k) { try { localStorage.removeItem(k); } catch (e) { console.error('删除失败', e); } }
 };
 
-const K_REC = 'tt_records_v1', K_TIMER = 'tt_timer_v1', K_THEME = 'tt_theme_v1', K_MODE = 'tt_mode_v1', K_LASTPJ = 'tt_last_project', K_SCHED = 'tt_sched_v1', K_EXAM = 'tt_exam_v1';
+const K_REC = 'tt_records_v1', K_TIMER = 'tt_timer_v1', K_THEME = 'tt_theme_v1', K_MODE = 'tt_mode_v1', K_LASTPJ = 'tt_last_project', K_SCHED = 'tt_sched_v1', K_EXAM = 'tt_exam_v1', K_THEME_COLOR = 'tt_theme_color_v1';
 
 let _toastTimer = null;
 function toast(msg) {
@@ -501,14 +563,8 @@ function fmtDateTime(ts) {
 }
 function dateStr(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 function getWeekKey(ts) { const d = new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return dateStr(d); }
+function cssColor(name, fallback) { const v = getComputedStyle(document.body).getPropertyValue(name).trim(); return v || fallback; }
 
-/* 从 CSS 变量读取计算后的颜色，给 canvas 使用 */
-function cssColor(name, fallback) {
-  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
-  return v || fallback;
-}
-
-/* 解析时间字符串，判断是时间点还是时间段 */
 function parseTimeValue(str) {
   const s = String(str || '').trim();
   let m = s.match(/^(\d{1,2}:\d{2})\s*[-~—至]\s*(\d{1,2}:\d{2})$/);
@@ -518,39 +574,183 @@ function parseTimeValue(str) {
   return { mode: 'point', point: '' };
 }
 
-/* 导出与导入 */
-$('#btnBackup').addEventListener('click', () => {
-  const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key.startsWith('tt_')) {
-      data[key] = localStorage.getItem(key);
+/* 颜色工具 */
+function hexToRgb(hex) {
+  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+}
+function mixColors(c1, c2, weight) {
+  const r1 = hexToRgb(c1), r2 = hexToRgb(c2);
+  if(!r1 || !r2) return c1;
+  const r = Math.round(r1.r * (1 - weight) + r2.r * weight);
+  const g = Math.round(r1.g * (1 - weight) + r2.g * weight);
+  const b = Math.round(r1.b * (1 - weight) + r2.b * weight);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+/* =====================================================================
+   0.5 屏幕常亮控制 (Wake Lock API)
+   ===================================================================== */
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('屏幕常亮已开启');
+    } else {
+      console.log('当前浏览器不支持屏幕常亮API');
     }
+  } catch (err) {
+    console.warn(`屏幕常亮请求失败: ${err.name}, ${err.message}`);
   }
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `番茄钟备份_${dateStr(new Date())}.json`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  toast('备份文件已下载，请妥善保存');
+}
+function releaseWakeLock() {
+  if (wakeLock !== null) {
+    wakeLock.release().then(() => {
+      wakeLock = null;
+      console.log('屏幕常亮已释放');
+    });
+  }
+}
+// 页面切回前台时，如果处于全屏状态，重新请求常亮
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && document.body.style.overflow === 'hidden') {
+    await requestWakeLock();
+  }
 });
 
-$('#restoreInput').addEventListener('change', function(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (confirm('确定导入吗？当前设备的所有数据将被覆盖！')) {
-        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
-        location.reload();
-      }
-    } catch (err) { toast('导入失败，文件格式不正确'); }
-  };
-  reader.readAsText(file); this.value = '';
-});
+/* =====================================================================
+   0.6 自定义主题配色系统
+   ===================================================================== */
+const PRESETS = [
+  { name: '默认蓝', primary: '#3b82f6', secondary: '#60a5fa', bg1: '#e9f1fd', bg2: '#f8fbff' },
+  { name: '柠檬舒芙蕾', primary: '#dca378', secondary: '#d3e086', bg1: '#ebeccc', bg2: '#fff0b3' },
+  { name: '蜜桃乳酪糕', primary: '#af7351', secondary: '#fdc0c5', bg1: '#d2eef2', bg2: '#feecaa' },
+  { name: '树莓荔枝卷', primary: '#f9879a', secondary: '#d9c7ef', bg1: '#cbf1f7', bg2: '#ffe48f' },
+  { name: '茉莉蜜豆奶', primary: '#da6483', secondary: '#dcc1e0', bg1: '#faf4aa', bg2: '#f7d68d' },
+  { name: '鲷鱼烧日落', primary: '#ea7878', secondary: '#ffc840', bg1: '#fff385', bg2: '#fcf0a7' },
+  { name: '莓酱芝士挞', primary: '#ffb6bd', secondary: '#afdcf1', bg1: '#ffeeb6', bg2: '#ffd7d5' },
+  { name: '雏菊冰糖梨', primary: '#63d6c5', secondary: '#9dc847', bg1: '#bbeadb', bg2: '#f9eea0' },
+  { name: '法式蜜桃派', primary: '#f28695', secondary: '#ffd0a9', bg1: '#fce7ae', bg2: '#ffc5bb' },
+  { name: '苹果酿酒', primary: '#893619', secondary: '#B8D87F', bg1: '#BEE0C0', bg2: '#ffffff' }
+];
+
+function getSavedTheme() { return store.get(K_THEME_COLOR, null); }
+
+function updateCustomThemeCSS() {
+  const theme = getSavedTheme();
+  const styleEl = $('#custom-theme-style');
+  if (!theme) { styleEl.textContent = ''; return; }
+  
+  const isDark = document.body.classList.contains('dark');
+  let p = theme.primary, s = theme.secondary, b1 = theme.bg1, b2 = theme.bg2;
+  
+  // 夜间模式色彩计算
+  if (isDark) {
+    b1 = mixColors(theme.primary, '#070e18', 0.85);
+    b2 = mixColors(theme.secondary, '#0c1826', 0.9);
+    p = mixColors(theme.primary, '#ffffff', 0.25); 
+    s = mixColors(theme.secondary, '#ffffff', 0.25);
+  }
+  
+  styleEl.textContent = `
+    body, body[data-mode="time"], body[data-mode="pomo"], body[data-mode="sched"], body[data-mode="exam"] {
+      --accent: ${p} !important;
+      --accent2: ${s} !important;
+      --bg1: ${b1} !important;
+      --bg2: ${b2} !important;
+    }
+  `;
+}
+
+function applyThemeColor(theme, save = true) {
+  if (save) {
+    if (theme && theme.name === '恢复默认') {
+      store.remove(K_THEME_COLOR);
+    } else {
+      store.set(K_THEME_COLOR, theme);
+    }
+  }
+  updateCustomThemeCSS();
+  if (document.body.dataset.mode === 'pomo') drawPie();
+  if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
+    requestAnimationFrame(() => runAnalysis(_lastAnalysisIds));
+  }
+}
+
+function openThemeModal() {
+  const current = getSavedTheme() || PRESETS[0];
+  
+  let presetHtml = PRESETS.map((p, i) => {
+    const isActive = current.primary === p.primary && current.bg1 === p.bg1;
+    return `
+      <div class="theme-card ${isActive ? 'active' : ''}" onclick="selectThemePreset(${i})">
+        <div class="theme-colors">
+          <div style="background:${p.primary}"></div>
+          <div style="background:${p.secondary}"></div>
+          <div style="background:${p.bg1}"></div>
+          <div style="background:${p.bg2}"></div>
+        </div>
+        <div class="theme-name">${p.name}</div>
+      </div>
+    `;
+  }).join('');
+
+  openModal(`
+    <h3>🎨 主题配色</h3>
+    <div class="theme-picker-grid">
+      <div class="theme-card ${!getSavedTheme() ? 'active' : ''}" onclick="applyThemeColor({name:'恢复默认'}, true); closeModal()">
+        <div class="theme-colors">
+          <div style="background:#3b82f6"></div>
+          <div style="background:#60a5fa"></div>
+          <div style="background:#e9f1fd"></div>
+          <div style="background:#f8fbff"></div>
+        </div>
+        <div class="theme-name">恢复默认</div>
+      </div>
+      ${presetHtml}
+    </div>
+
+    <div class="muted" style="margin-bottom:10px;">自定义配色（拖动颜色调整）：</div>
+    <div class="custom-theme-editor">
+      <label class="color-field">主色 <input type="color" id="cpPrimary" value="${current.primary}"></label>
+      <label class="color-field">辅色 <input type="color" id="cpSecondary" value="${current.secondary}"></label>
+      <label class="color-field">背景1 <input type="color" id="cpBg1" value="${current.bg1}"></label>
+      <label class="color-field">背景2 <input type="color" id="cpBg2" value="${current.bg2}"></label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="primary" onclick="closeModal()">完成</button>
+    </div>
+  `, (box, close) => {
+    window.closeModal = close; 
+    
+    const bindInput = () => {
+      const newTheme = {
+        name: '自定义',
+        primary: box.querySelector('#cpPrimary').value,
+        secondary: box.querySelector('#cpSecondary').value,
+        bg1: box.querySelector('#cpBg1').value,
+        bg2: box.querySelector('#cpBg2').value
+      };
+      applyThemeColor(newTheme, true);
+      box.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+    };
+    box.querySelector('#cpPrimary').addEventListener('input', bindInput);
+    box.querySelector('#cpSecondary').addEventListener('input', bindInput);
+    box.querySelector('#cpBg1').addEventListener('input', bindInput);
+    box.querySelector('#cpBg2').addEventListener('input', bindInput);
+  });
+}
+
+window.selectThemePreset = function(index) {
+  applyThemeColor(PRESETS[index], true);
+  document.querySelectorAll('.theme-card').forEach((c, i) => {
+    c.classList.toggle('active', i === index + 1); 
+  });
+};
+
+$('#btnThemePreset').addEventListener('click', openThemeModal);
 
 /* =====================================================================
    1. 背景漂浮图 & 音频
@@ -596,7 +796,7 @@ function triggerAlarm() {
 }
 
 /* =====================================================================
-   2. 时间 & 翻页时钟
+   2. 时间 & 翻页时钟 & 备份
    ===================================================================== */
 const WEEK_CN = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 let lastFlipValues = { h1: -1, h2: -1, m1: -1, m2: -1, s1: -1, s2: -1 };
@@ -605,6 +805,7 @@ function tickClock() {
   const now = new Date(); const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
   $('#clockHM').textContent = `${pad2(h)}:${pad2(m)}`; $('#clockS').textContent = pad2(s);
   $('#bigDate').textContent = `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日 ${WEEK_CN[now.getDay()]}`;
+  
   if ($('#flipClockOverlay').classList.contains('active')) {
     const groups = { h: $('#flipH'), m: $('#flipM'), s: $('#flipS') };
     if (groups.h.innerHTML === '') {
@@ -629,12 +830,58 @@ function tickClock() {
 }
 function toggleFlipClock() {
   const overlay = $('#flipClockOverlay');
-  if (overlay.classList.contains('active')) { overlay.classList.remove('active'); document.body.style.overflow = ''; if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }
-  else { overlay.classList.add('active'); document.body.style.overflow = 'hidden'; $('#flipH').innerHTML = ''; tickClock(); const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
+  if (overlay.classList.contains('active')) { 
+    overlay.classList.remove('active'); 
+    document.body.style.overflow = ''; 
+    releaseWakeLock(); // 释放屏幕常亮
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); 
+  }
+  else { 
+    overlay.classList.add('active'); 
+    document.body.style.overflow = 'hidden'; 
+    requestWakeLock(); // 开启屏幕常亮
+    $('#flipH').innerHTML = ''; 
+    tickClock(); 
+    const el = document.documentElement; 
+    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); 
+  }
 }
 
+$('#btnBackup').addEventListener('click', () => {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('tt_')) {
+      data[key] = localStorage.getItem(key);
+    }
+  }
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `番茄钟备份_${dateStr(new Date())}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('备份文件已下载，请妥善保存');
+});
+
+$('#restoreInput').addEventListener('change', function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (confirm('确定导入吗？当前设备的所有数据将被覆盖！')) {
+        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
+        location.reload();
+      }
+    } catch (err) { toast('导入失败，文件格式不正确'); }
+  };
+  reader.readAsText(file); this.value = '';
+});
+
 /* =====================================================================
-   3. 番茄钟
+   3. 番茄钟 & 全屏翻页
    ===================================================================== */
 const timer = { mode: 'countdown', totalMs: 25 * 60 * 1000, elapsedBase: 0, runStart: null, running: false };
 function loadTimer() {
@@ -643,7 +890,6 @@ function loadTimer() {
     timer.mode = s.mode === 'countup' ? 'countup' : 'countdown'; timer.totalMs = Number(s.totalMs) || 25 * 60 * 1000;
     timer.elapsedBase = Number(s.elapsedBase) || 0; timer.running = !!s.running; timer.runStart = s.runStart || null;
     if (timer.running && !timer.runStart) timer.runStart = Date.now();
-    // 跨夜/超时守卫
     if (timer.running && timer.runStart && (Date.now() - timer.runStart) > 6 * 3600 * 1000) {
       timer.running = false; timer.runStart = null; timer.elapsedBase = 0;
     }
@@ -657,22 +903,83 @@ function toggleTimer() {
   else { if (timer.mode === 'countdown' && timer.elapsedBase >= timer.totalMs) timer.elapsedBase = 0; timer.running = true; timer.runStart = Date.now(); }
   saveTimer(); updateStartBtn(); tickTimer();
 }
-function updateStartBtn() { const btn = $('#btnStartPause'); if (btn) btn.textContent = timer.running ? '暂停' : '开始'; }
+function updateStartBtn() { 
+  const t = timer.running ? '暂停' : '开始';
+  $('#btnStartPause').textContent = t; 
+  $('#pomoFlipToggle').textContent = t;
+}
 function tickTimer() {
   const disp = $('#timerDisplay'); if (!disp) return;
   const ms = timer.mode === 'countdown' ? Math.max(0, timer.totalMs - elapsed()) : elapsed();
   disp.textContent = fmtMS(ms);
+  
   if (timer.mode === 'countdown') $('#progressBar').style.width = Math.min(1, elapsed() / timer.totalMs) * 100 + '%';
   else $('#progressBar').style.width = '100%';
+  
   if (timer.running && timer.mode === 'countdown' && elapsed() >= timer.totalMs) onCountdownEnd();
+  
+  if ($('#pomoFlipOverlay').classList.contains('active')) {
+    updatePomoFlipDisplay(ms);
+  }
 }
+
+let lastPomoFlipValues = { m1: -1, m2: -1, s1: -1, s2: -1 };
+function createPomoFlipCard(val) { return `<div class="pomo-flip-card"><span class="num">${val}</span></div>`; }
+function updatePomoFlipDisplay(ms) {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  const mm = pad2(m), ss = pad2(s);
+
+  if ($('#pomoFlipM').innerHTML === '') {
+    $('#pomoFlipM').innerHTML = createPomoFlipCard(mm[0]) + createPomoFlipCard(mm[1]);
+    $('#pomoFlipS').innerHTML = createPomoFlipCard(ss[0]) + createPomoFlipCard(ss[1]);
+    lastPomoFlipValues = { m1: mm[0], m2: mm[1], s1: ss[0], s2: ss[1] };
+  } else {
+    const updateCard = (groupId, index, newVal, oldValKey) => {
+      if (lastPomoFlipValues[oldValKey] !== newVal) {
+        const card = $('#' + groupId).children[index];
+        card.querySelector('.num').textContent = newVal;
+        card.classList.remove('pomo-flip-anim'); void card.offsetWidth; card.classList.add('pomo-flip-anim');
+        lastPomoFlipValues[oldValKey] = newVal;
+      }
+    };
+    updateCard('pomoFlipM', 0, mm[0], 'm1'); updateCard('pomoFlipM', 1, mm[1], 'm2');
+    updateCard('pomoFlipS', 0, ss[0], 's1'); updateCard('pomoFlipS', 1, ss[1], 's2');
+  }
+}
+function togglePomoFullscreen() {
+  const overlay = $('#pomoFlipOverlay');
+  if (overlay.classList.contains('active')) {
+    overlay.classList.remove('active'); 
+    document.body.style.overflow = '';
+    releaseWakeLock(); // 释放屏幕常亮
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  } else {
+    overlay.classList.add('active'); 
+    document.body.style.overflow = 'hidden';
+    requestWakeLock(); // 开启屏幕常亮
+    $('#pomoFlipM').innerHTML = ''; 
+    const lastPj = store.get(K_LASTPJ, '保持专注，享受当下');
+    $('#pomoFlipTask').textContent = lastPj ? `专注任务：${lastPj}` : '保持专注，享受当下';
+    tickTimer(); 
+    const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  }
+}
+$('#btnPomoFullscreen').addEventListener('click', togglePomoFullscreen);
+$('#pomoFlipClose').addEventListener('click', togglePomoFullscreen);
+$('#pomoFlipToggle').addEventListener('click', toggleTimer);
+$('#pomoFlipReset').addEventListener('click', resetTimer);
+
 function onCountdownEnd() {
   const dur = timer.totalMs; timer.running = false; timer.runStart = null; timer.elapsedBase = timer.totalMs;
   saveTimer(); updateStartBtn(); tickTimer(); triggerAlarm(); openRecordModal(dur, resetTimer);
+  if ($('#pomoFlipOverlay').classList.contains('active')) togglePomoFullscreen();
 }
 function handleFinish() {
   const dur = elapsed(); if (dur < 1000) { toast('还没有开始计时哦～'); return; }
   timer.running = false; timer.runStart = null; saveTimer(); updateStartBtn(); tickTimer(); triggerAlarm(); openRecordModal(dur, resetTimer);
+  if ($('#pomoFlipOverlay').classList.contains('active')) togglePomoFullscreen();
 }
 function setTimerMode(mode) {
   timer.mode = mode; timer.running = false; timer.runStart = null; timer.elapsedBase = 0; saveTimer(); updateStartBtn();
@@ -764,7 +1071,6 @@ function exportCSV() {
 /* =====================================================================
    5. 饼图
    ===================================================================== */
-const PALETTE = ['#4f8cff', '#ff8a5c', '#3ecf8e', '#f7c948', '#a97bff', '#f56aa8', '#33c6d9'];
 function getLast7DaysData() {
   const now = Date.now(), from = now - 7 * 864e5; const map = new Map();
   records.forEach(r => { if (r.ts < from || r.ts > now) return; map.set(r.name, (map.get(r.name) || 0) + r.durationMs); });
@@ -775,9 +1081,14 @@ function drawPie() {
   const cv = $('#pieChart'); if (!cv) return; const dpr = Math.min(window.devicePixelRatio || 1, 2); const W = 260, H = 260;
   cv.width = W * dpr; cv.height = H * dpr; const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
   const legend = $('#pieLegend'); const data = getLast7DaysData(); const total = data.reduce((s, d) => s + d.ms, 0);
+  
+  const cPrimary = cssColor('--accent', '#4f8cff');
+  const cSecondary = cssColor('--accent2', '#ff8a5c');
+  const PALETTE = [cPrimary, cSecondary, '#3ecf8e', '#f7c948', '#a97bff', '#f56aa8', '#33c6d9'];
+
   if (!data.length || total <= 0) {
     ctx.beginPath(); ctx.arc(W/2, H/2, 105, 0, Math.PI * 2); ctx.lineWidth = 30; ctx.strokeStyle = 'rgba(140,160,190,.22)'; ctx.stroke();
-    ctx.fillStyle = 'rgba(140,160,190,.9)'; ctx.font = '600 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('近 7 天暂无记录', W/2, H/2);
+    ctx.fillStyle = cssColor('--muted', '#6d7b8e'); ctx.font = '600 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('近 7 天暂无记录', W/2, H/2);
     legend.innerHTML = '<div class="empty">开始一次专注，这里就会长出你的饼图啦 🍅</div>'; return;
   }
   const cx = W/2, cy = H/2, rOut = 108, rIn = 66;
@@ -809,18 +1120,13 @@ if (!schedData || !schedData.cols || !schedData.rows) {
   store.set(K_SCHED, schedData);
 }
 
-/* 带存储上限防护的保存 */
 function saveSched() {
   try {
     const str = JSON.stringify(schedData);
-    if (str.length > 4.2 * 1024 * 1024) {
-      toast('数据接近存储上限，请清理部分照片后重试');
-      return;
-    }
+    if (str.length > 4.2 * 1024 * 1024) { toast('数据接近存储上限，请清理部分照片后重试'); return; }
     localStorage.setItem(K_SCHED, str);
   } catch (e) {
-    console.error('保存日程失败', e);
-    toast('存储已满，保存失败');
+    console.error('保存日程失败', e); toast('存储已满，保存失败');
   }
 }
 
@@ -833,7 +1139,6 @@ function renderSched() {
   body.innerHTML = schedData.rows.map(row => `
     <tr>${schedData.cols.map((col, idx) => {
       if (col.id === 'c1') {
-        // 时间列：手动输入 + 快捷选择按钮
         return `<td class="time-cell-td"><input type="text" value="${escAttr(row.cells[col.id] || '')}" data-row-id="${row.id}" data-col-id="${col.id}" class="cell-input" placeholder="08:00 / 08:00-09:30"><button class="time-pick-btn" data-row-id="${row.id}" title="快速选择时间">⏱</button></td>`;
       }
       if (idx < 3) return `<td><input type="text" value="${escAttr(row.cells[col.id] || '')}" data-row-id="${row.id}" data-col-id="${col.id}" class="cell-input"></td>`;
@@ -859,7 +1164,6 @@ $('#schedHead').addEventListener('click', e => {
   }
 });
 $('#schedBody').addEventListener('click', e => {
-  // 时间列快捷选择按钮
   const pickBtn = e.target.closest('.time-pick-btn');
   if (pickBtn) { openTimePicker(pickBtn.dataset.rowId); return; }
 
@@ -881,14 +1185,12 @@ $('#btnAddSchedCol').addEventListener('click', () => {
 });
 $('#btnClearSched').addEventListener('click', () => {
   if (!confirm('确定要清空整个表格并重置吗？')) return;
-  store.remove(K_SCHED);
-  location.reload();
+  store.remove(K_SCHED); location.reload();
 });
 
-/* --- 时间选择弹窗（用于表格内某行的时间列） --- */
+/* --- 时间选择弹窗 --- */
 function openTimePicker(rowId) {
-  const row = schedData.rows.find(r => r.id === rowId);
-  if (!row) return;
+  const row = schedData.rows.find(r => r.id === rowId); if (!row) return;
   const current = row.cells.c1 || '';
   const parsed = parseTimeValue(current);
   const now = new Date();
@@ -934,8 +1236,7 @@ function openTimePicker(rowId) {
 
     box.querySelector('#tpCancel').onclick = close;
     box.querySelector('#tpClear').onclick = () => {
-      row.cells.c1 = '';
-      saveSched(); renderSched(); close(); toast('已清空时间');
+      row.cells.c1 = ''; saveSched(); renderSched(); close(); toast('已清空时间');
     };
     box.querySelector('#tpSave').onclick = () => {
       let timeStr = '';
@@ -956,7 +1257,7 @@ function openTimePicker(rowId) {
   });
 }
 
-/* --- 录入日程弹窗 → 自动汇总到日程表 --- */
+/* --- 录入日程弹窗 --- */
 function openAddSchedModal() {
   const today = dateStr(new Date());
   const now = new Date();
@@ -1031,19 +1332,16 @@ function openAddSchedModal() {
       }
       if (!project && !content) { toast('项目或内容至少填一项'); return; }
 
-      // 1. 找到或创建日期列
       let dateCol = schedData.cols.find(c => c.date === date);
       if (!dateCol) {
         const parts = date.split('-');
         dateCol = { id: 'col_' + date, name: `${parts[1]}-${parts[2]}`, date: date, fixed: false };
         schedData.cols.push(dateCol);
-        // 日期列按日期排序，固定列保持原位
         const fixedCols = schedData.cols.filter(c => !c.date);
         const dateCols = schedData.cols.filter(c => c.date).sort((a, b) => a.date.localeCompare(b.date));
         schedData.cols = [...fixedCols, ...dateCols];
       }
 
-      // 2. 生成新行
       const newRow = { id: uid(), cells: {} };
       newRow.cells['c1'] = timeStr;
       newRow.cells['c2'] = project;
@@ -1051,27 +1349,21 @@ function openAddSchedModal() {
       newRow.cells[dateCol.id] = 0;
       schedData.rows.push(newRow);
 
-      // 3. 保存并渲染
       clearTimeout(schedSaveTimer);
-      saveSched();
-      renderSched();
-      updateCalendarDots();
+      saveSched(); renderSched(); updateCalendarDots();
 
       toast(`已添加到 ${date} 的日程 ✨`);
       if (multi) {
-        // 连续添加：清空项目和内容，继续录入
         projectEl.value = '';
         box.querySelector('#sdContent').value = '';
         setTimeout(() => projectEl.focus(), 40);
-      } else {
-        close();
-      }
+      } else { close(); }
     };
   });
 }
 $('#btnAddSched').addEventListener('click', openAddSchedModal);
 
-/* --- 月历视图（放在抽屉里） --- */
+/* --- 月历视图 --- */
 let currentCalYear = new Date().getFullYear(); let currentCalMonth = new Date().getMonth();
 function renderCalendar() {
   const grid = $('#calGrid'); const title = $('#calTitle'); title.textContent = `${currentCalYear}年${currentCalMonth + 1}月`;
@@ -1101,8 +1393,7 @@ function updateCalendarDots() {
   });
 }
 $('#btnSticky').addEventListener('click', () => {
-  $('#drawer').classList.add('open');
-  renderCalendar();
+  $('#drawer').classList.add('open'); renderCalendar();
 });
 $('#btnCloseDrawer').addEventListener('click', () => {
   $('#drawer').classList.remove('open');
@@ -1128,7 +1419,6 @@ function openDailyPlan(date) {
       listDiv.innerHTML = tasks.map((row, idx) => {
         const photoKey = `photo_${date}`; const photoData = row.cells[photoKey] || '';
         const state = row.cells[dateCol.id] || 0;
-        // 时间段中间加空格更易读
         const timeDisplay = String(row.cells.c1 || '').replace(/-/g, ' - ');
         return `<div class="plan-item">
           <div style="width:24px; height:24px; border-radius:6px; background:${state===1?'#22c55e':state===2?'#ef4444':'transparent'}; border:2px solid ${state===1?'#22c55e':state===2?'#ef4444':'var(--card-border)'}; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">${state===1?'✓':state===2?'✗':''}</div>
@@ -1420,6 +1710,7 @@ function applyTheme(dark) {
   document.body.classList.toggle('dark', dark);
   $('#themeIcon').textContent = dark ? '☀️' : '🌙';
   store.set(K_THEME, dark);
+  updateCustomThemeCSS(); // 更新自定义颜色的深色适配
   if (document.body.dataset.mode === 'pomo') drawPie();
   if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
     requestAnimationFrame(() => runAnalysis(_lastAnalysisIds));
