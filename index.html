@@ -194,7 +194,7 @@ td.op-cell button:last-child{margin-right:0;}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--card-border);padding-top:calc(18px + env(safe-area-inset-top));}
 .drawer-head h3{margin:0;font-size:16px;}
 .drawer-body{padding:20px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
-.cal-header {display: flex;justify-content: space-between; align-items: center;margin-bottom: 20px;font-size: 18px;font-weight: 700;}
+.cal-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 20px;font-size: 18px;font-weight: 700;}
 .cal-header button {background: none;border: none;font-size: 24px;cursor: pointer;color: var(--text);padding: 0 10px;}
 .cal-grid {display: grid;grid-template-columns: repeat(7, 1fr);gap: 6px;text-align: center;}
 .cal-weekday {font-size: 12px;color: var(--muted);font-weight: 700;margin-bottom: 5px;}
@@ -361,6 +361,7 @@ td.op-cell button:last-child{margin-right:0;}
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 170px);">
       <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
         <button id="btnFlipMode" class="ghost">🕒 切换翻页时钟</button>
+        <button id="btnPipTime" class="ghost">🪟 悬浮小窗</button>
         <button id="btnBackup" class="ghost">💾 导出数据</button>
         <button id="btnRestore" class="ghost" style="position:relative;">📥 导入数据<input type="file" id="restoreInput" accept=".json" style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer;"></button>
       </div>
@@ -389,6 +390,7 @@ td.op-cell button:last-child{margin-right:0;}
         <button id="btnReset" class="ghost">重置</button>
         <button id="btnFinish" class="ghost">结束并记录</button>
         <button id="btnPomoFullscreen" class="ghost" style="color:var(--accent);border-color:var(--accent);">⛶ 全屏专注</button>
+        <button id="btnPipPomo" class="ghost" style="color:var(--accent);border-color:var(--accent);">🪟 悬浮小窗</button>
       </div>
       <div style="height:6px;border-radius:99px;background:rgba(130,150,190,.18);margin-top:22px;overflow:hidden;"><div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));"></div></div>
     </div>
@@ -500,6 +502,10 @@ td.op-cell button:last-child{margin-right:0;}
 <!-- 隐藏的图片上传控件 -->
 <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
 
+<!-- 画中画隐藏组件 -->
+<video id="pipVideo" autoplay muted playsinline style="display:none;"></video>
+<canvas id="pipCanvas" width="480" height="270" style="display:none;"></canvas>
+
 <!-- 原版翻页时钟（当前时间） -->
 <div id="flipClockOverlay">
   <div class="flip-wrap">
@@ -530,7 +536,7 @@ td.op-cell button:last-child{margin-right:0;}
 
 <script>
 /* =====================================================================
-   0. 通用工具 & 数据备份
+   0. 通用工具 & 数据备份 & App原生适配
    ===================================================================== */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -538,6 +544,8 @@ const pad2 = n => String(n).padStart(2, '0');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const escAttr = escHtml;
+
+const isApp = typeof plus !== 'undefined';
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -574,7 +582,6 @@ function parseTimeValue(str) {
   return { mode: 'point', point: '' };
 }
 
-/* 颜色工具 */
 function hexToRgb(hex) {
   let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
@@ -588,39 +595,212 @@ function mixColors(c1, c2, weight) {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-/* =====================================================================
-   0.5 屏幕常亮控制 (Wake Lock API)
-   ===================================================================== */
+/* ============ App 适配：屏幕常亮 ============ */
 let wakeLock = null;
 async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      console.log('屏幕常亮已开启');
-    } else {
-      console.log('当前浏览器不支持屏幕常亮API');
-    }
-  } catch (err) {
-    console.warn(`屏幕常亮请求失败: ${err.name}, ${err.message}`);
+  if (isApp) {
+    try { plus.device.setWakelock(true); console.log('App原生屏幕常亮已开启'); } catch(e) { console.warn(e); }
+    return;
   }
+  try {
+    if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); console.log('Web屏幕常亮已开启'); }
+  } catch (err) { console.warn(`Web常亮请求失败: ${err.name}`); }
 }
 function releaseWakeLock() {
-  if (wakeLock !== null) {
-    wakeLock.release().then(() => {
-      wakeLock = null;
-      console.log('屏幕常亮已释放');
-    });
+  if (isApp) {
+    try { plus.device.setWakelock(false); console.log('App原生屏幕常亮已释放'); } catch(e) { console.warn(e); }
+    return;
   }
+  if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
 }
-// 页面切回前台时，如果处于全屏状态，重新请求常亮
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && document.body.style.overflow === 'hidden') {
     await requestWakeLock();
   }
 });
 
+/* ============ App 适配：沉浸全屏与状态栏 ============ */
+function enterImmersive() {
+  requestWakeLock();
+  if (isApp) { plus.navigator.setFullscreen(true); } 
+  else {
+    const el = document.documentElement; 
+    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  }
+}
+function exitImmersive() {
+  releaseWakeLock();
+  if (isApp) { plus.navigator.setFullscreen(false); } 
+  else {
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  }
+}
+
 /* =====================================================================
-   0.6 自定义主题配色系统
+   0.1 画中画 (Picture-in-Picture) 核心逻辑
+   ===================================================================== */
+let pipMode = 'none'; // 'none' | 'time' | 'pomo'
+const pipCanvas = $('#pipCanvas');
+const pipCtx = pipCanvas.getContext('2d');
+const pipVideo = $('#pipVideo');
+
+async function togglePip(mode) {
+  if (!document.pictureInPictureEnabled) {
+    toast('当前浏览器不支持画中画悬浮窗');
+    return;
+  }
+
+  if (document.pictureInPictureElement) {
+    if (pipMode === mode) {
+      await document.exitPictureInPicture();
+      return;
+    } else {
+      await document.exitPictureInPicture();
+    }
+  }
+
+  pipMode = mode;
+  renderPipFrame(); // 初始渲染
+
+  try {
+    // 1. 将 Canvas 转为视频流
+    const stream = pipCanvas.captureStream(1); // 1 fps 够用了，节省性能
+    pipVideo.srcObject = stream;
+    await pipVideo.play();
+    // 2. 触发画中画
+    await pipVideo.requestPictureInPicture();
+  } catch (err) {
+    console.error('画中画启动失败', err);
+    toast('无法开启悬浮窗，请确保使用最新版 Chrome/Safari');
+    pipMode = 'none';
+  }
+}
+
+// 监听画中画状态改变
+pipVideo.addEventListener('enterpictureinpicture', () => {
+  toast('已开启悬浮小窗 🪟');
+  requestWakeLock(); // 悬浮窗时尽量保持常亮
+});
+pipVideo.addEventListener('leavepictureinpicture', () => {
+  pipMode = 'none';
+  releaseWakeLock();
+});
+
+// 绘制画中画内容
+function renderPipFrame() {
+  if (pipMode === 'none') return;
+
+  const W = pipCanvas.width;
+  const H = pipCanvas.height;
+  
+  // 背景
+  pipCtx.fillStyle = '#1a1a1a';
+  pipCtx.fillRect(0, 0, W, H);
+
+  if (pipMode === 'time') {
+    // === 时间模式 ===
+    const now = new Date();
+    const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    const secStr = pad2(now.getSeconds());
+    
+    pipCtx.textAlign = 'center';
+    pipCtx.textBaseline = 'middle';
+    
+    // 主时间
+    pipCtx.fillStyle = '#ffffff';
+    pipCtx.font = 'bold 120px sans-serif';
+    pipCtx.fillText(timeStr, W/2 - 20, H/2);
+    
+    // 秒
+    pipCtx.fillStyle = 'rgba(255,255,255,0.6)';
+    pipCtx.font = 'bold 50px sans-serif';
+    pipCtx.fillText(secStr, W/2 + 140, H/2 + 35);
+    
+  } else if (pipMode === 'pomo') {
+    // === 番茄钟模式 ===
+    const ms = timer.mode === 'countdown' ? Math.max(0, timer.totalMs - elapsed()) : elapsed();
+    const timeStr = fmtMS(ms);
+    const progress = timer.mode === 'countdown' ? Math.min(1, elapsed() / timer.totalMs) : 1;
+
+    pipCtx.textAlign = 'center';
+    pipCtx.textBaseline = 'middle';
+
+    // 字体颜色
+    pipCtx.fillStyle = timer.running ? '#60a5fa' : '#ffffff';
+    pipCtx.font = 'bold 100px sans-serif';
+    pipCtx.fillText(timeStr, W/2, H/2 - 10);
+
+    // 进度条
+    const barW = W * 0.7;
+    const barH = 12;
+    const barX = (W - barW) / 2;
+    const barY = H - 50;
+
+    pipCtx.fillStyle = 'rgba(255,255,255,0.2)';
+    pipCtx.fillRect(barX, barY, barW, barH);
+
+    pipCtx.fillStyle = '#60a5fa';
+    pipCtx.fillRect(barX, barY, barW * progress, barH);
+  }
+}
+
+// 绑定画中画按钮
+$('#btnPipTime').addEventListener('click', () => togglePip('time'));
+$('#btnPipPomo').addEventListener('click', () => togglePip('pomo'));
+
+
+/* ============ App 适配：原生文件保存备份 ============ */
+$('#btnBackup').addEventListener('click', () => {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('tt_')) { data[key] = localStorage.getItem(key); }
+  }
+  const jsonStr = JSON.stringify(data);
+  const fileName = `番茄钟备份_${dateStr(new Date())}.json`;
+
+  if (isApp) {
+    try {
+      plus.io.resolveLocalFileSystemURL('_downloads/', function(entry) {
+        entry.getFile(fileName, { create: true }, function(fileEntry) {
+          fileEntry.createWriter(function(writer) {
+            writer.write(jsonStr);
+            toast('备份文件已保存到手机文件管理');
+          });
+        });
+      });
+    } catch(e) {
+      plus.clipboard.setText(jsonStr);
+      toast('保存失败，已复制备份内容到剪贴板');
+    }
+  } else {
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('备份文件已下载');
+  }
+});
+
+$('#restoreInput').addEventListener('change', function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (confirm('确定导入吗？当前设备的所有数据将被覆盖！')) {
+        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
+        location.reload();
+      }
+    } catch (err) { toast('导入失败，文件格式不正确'); }
+  };
+  reader.readAsText(file); this.value = '';
+});
+
+/* =====================================================================
+   0.5 主题配色系统
    ===================================================================== */
 const PRESETS = [
   { name: '默认蓝', primary: '#3b82f6', secondary: '#60a5fa', bg1: '#e9f1fd', bg2: '#f8fbff' },
@@ -645,7 +825,6 @@ function updateCustomThemeCSS() {
   const isDark = document.body.classList.contains('dark');
   let p = theme.primary, s = theme.secondary, b1 = theme.bg1, b2 = theme.bg2;
   
-  // 夜间模式色彩计算
   if (isDark) {
     b1 = mixColors(theme.primary, '#070e18', 0.85);
     b2 = mixColors(theme.secondary, '#0c1826', 0.9);
@@ -665,11 +844,8 @@ function updateCustomThemeCSS() {
 
 function applyThemeColor(theme, save = true) {
   if (save) {
-    if (theme && theme.name === '恢复默认') {
-      store.remove(K_THEME_COLOR);
-    } else {
-      store.set(K_THEME_COLOR, theme);
-    }
+    if (theme && theme.name === '恢复默认') store.remove(K_THEME_COLOR);
+    else store.set(K_THEME_COLOR, theme);
   }
   updateCustomThemeCSS();
   if (document.body.dataset.mode === 'pomo') drawPie();
@@ -724,7 +900,6 @@ function openThemeModal() {
     </div>
   `, (box, close) => {
     window.closeModal = close; 
-    
     const bindInput = () => {
       const newTheme = {
         name: '自定义',
@@ -796,7 +971,7 @@ function triggerAlarm() {
 }
 
 /* =====================================================================
-   2. 时间 & 翻页时钟 & 备份
+   2. 时间 & 翻页时钟
    ===================================================================== */
 const WEEK_CN = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 let lastFlipValues = { h1: -1, h2: -1, m1: -1, m2: -1, s1: -1, s2: -1 };
@@ -806,6 +981,8 @@ function tickClock() {
   $('#clockHM').textContent = `${pad2(h)}:${pad2(m)}`; $('#clockS').textContent = pad2(s);
   $('#bigDate').textContent = `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日 ${WEEK_CN[now.getDay()]}`;
   
+  if (pipMode === 'time') renderPipFrame(); // 更新悬浮窗画面
+
   if ($('#flipClockOverlay').classList.contains('active')) {
     const groups = { h: $('#flipH'), m: $('#flipM'), s: $('#flipS') };
     if (groups.h.innerHTML === '') {
@@ -833,52 +1010,16 @@ function toggleFlipClock() {
   if (overlay.classList.contains('active')) { 
     overlay.classList.remove('active'); 
     document.body.style.overflow = ''; 
-    releaseWakeLock(); // 释放屏幕常亮
-    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); 
+    exitImmersive(); 
   }
   else { 
     overlay.classList.add('active'); 
     document.body.style.overflow = 'hidden'; 
-    requestWakeLock(); // 开启屏幕常亮
+    enterImmersive(); 
     $('#flipH').innerHTML = ''; 
     tickClock(); 
-    const el = document.documentElement; 
-    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); 
   }
 }
-
-$('#btnBackup').addEventListener('click', () => {
-  const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key.startsWith('tt_')) {
-      data[key] = localStorage.getItem(key);
-    }
-  }
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `番茄钟备份_${dateStr(new Date())}.json`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  toast('备份文件已下载，请妥善保存');
-});
-
-$('#restoreInput').addEventListener('change', function(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (confirm('确定导入吗？当前设备的所有数据将被覆盖！')) {
-        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
-        location.reload();
-      }
-    } catch (err) { toast('导入失败，文件格式不正确'); }
-  };
-  reader.readAsText(file); this.value = '';
-});
 
 /* =====================================================================
    3. 番茄钟 & 全屏翻页
@@ -918,6 +1059,8 @@ function tickTimer() {
   
   if (timer.running && timer.mode === 'countdown' && elapsed() >= timer.totalMs) onCountdownEnd();
   
+  if (pipMode === 'pomo') renderPipFrame(); // 更新悬浮窗画面
+
   if ($('#pomoFlipOverlay').classList.contains('active')) {
     updatePomoFlipDisplay(ms);
   }
@@ -953,17 +1096,15 @@ function togglePomoFullscreen() {
   if (overlay.classList.contains('active')) {
     overlay.classList.remove('active'); 
     document.body.style.overflow = '';
-    releaseWakeLock(); // 释放屏幕常亮
-    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    exitImmersive();
   } else {
     overlay.classList.add('active'); 
     document.body.style.overflow = 'hidden';
-    requestWakeLock(); // 开启屏幕常亮
+    enterImmersive();
     $('#pomoFlipM').innerHTML = ''; 
     const lastPj = store.get(K_LASTPJ, '保持专注，享受当下');
     $('#pomoFlipTask').textContent = lastPj ? `专注任务：${lastPj}` : '保持专注，享受当下';
     tickTimer(); 
-    const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
   }
 }
 $('#btnPomoFullscreen').addEventListener('click', togglePomoFullscreen);
@@ -1063,9 +1204,27 @@ function exportCSV() {
   if (!records.length) { toast('还没有记录可以导出'); return; }
   const rows = [['项目名称', '时长', '完成时间', '反馈']]; records.slice().sort((a, b) => a.ts - b.ts).forEach(r => { rows.push([r.name, fmtMS(r.durationMs), fmtDateTime(r.ts), r.feedback === 'pos' ? '正向 楽' : '负向 ▲']); });
   const csv = rows.map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `完成记录_${dateStr(new Date())}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000); toast('CSV 已导出');
+  
+  if (isApp) {
+    try {
+      const fileName = `完成记录_${dateStr(new Date())}.csv`;
+      plus.io.resolveLocalFileSystemURL('_downloads/', function(entry) {
+        entry.getFile(fileName, { create: true }, function(fileEntry) {
+          fileEntry.createWriter(function(writer) {
+            writer.write('\ufeff' + csv);
+            toast('CSV已保存到手机文件管理');
+          });
+        });
+      });
+    } catch(e) {
+      plus.clipboard.setText(csv);
+      toast('保存失败，已复制CSV内容到剪贴板');
+    }
+  } else {
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `完成记录_${dateStr(new Date())}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000); toast('CSV 已导出');
+  }
 }
 
 /* =====================================================================
@@ -1710,7 +1869,7 @@ function applyTheme(dark) {
   document.body.classList.toggle('dark', dark);
   $('#themeIcon').textContent = dark ? '☀️' : '🌙';
   store.set(K_THEME, dark);
-  updateCustomThemeCSS(); // 更新自定义颜色的深色适配
+  updateCustomThemeCSS();
   if (document.body.dataset.mode === 'pomo') drawPie();
   if (_lastAnalysisIds && $('#examAnalysisPanel').style.display !== 'none') {
     requestAnimationFrame(() => runAnalysis(_lastAnalysisIds));
@@ -1727,6 +1886,11 @@ function switchMode(mode) {
   if (mode === 'exam') renderExamTable();
 }
 function toggleFullscreen() {
+  if (isApp) {
+    if (plus.navigator.isFullscreen()) plus.navigator.setFullscreen(false);
+    else plus.navigator.setFullscreen(true);
+    return;
+  }
   const doc = window.document; const el = doc.documentElement;
   if (!doc.fullscreenElement && !doc.webkitFullscreenElement) { if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); }
   else { if (doc.exitFullscreen) doc.exitFullscreen().catch(()=>{}); else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen(); }
@@ -1778,6 +1942,14 @@ function init() {
   switchMode(store.get(K_MODE, 'time'));
   bindEvents();
   setInterval(tickClock, 1000); setInterval(tickTimer, 100);
+  
+  if (isApp) {
+    plus.key.addEventListener('backbutton', function(){
+      if ($('#flipClockOverlay').classList.contains('active')) { toggleFlipClock(); return; }
+      if ($('#pomoFlipOverlay').classList.contains('active')) { togglePomoFullscreen(); return; }
+      plus.runtime.quit();
+    });
+  }
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>
